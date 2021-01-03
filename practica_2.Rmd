@@ -1,0 +1,112 @@
+---
+title: 'Tipologia i cicle de vida de les dades: Pràctica 2'
+author: "Autor: Adrià Tarradas i Aleix Soler"
+date: "Desembre 2020"
+output:
+  html_document:
+    highlight: default
+    number_sections: yes
+    theme: cosmo
+    toc: yes
+    toc_depth: 2
+  pdf_document:
+    highlight: zenburn
+    toc: yes
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+* **Càrrega de llibreries**
+
+```{r, include=FALSE}
+library("readr")
+library("stringr")
+```
+
+# Presentació del dataset
+
+El dataset que utilitzarem en aquesta pràctica és *Titanic: Machine Learning from Disaster*, disponible a [aquí](https://www.kaggle.com/c/titanic). Aquest conjunt de dades està compost per diversos registres dels passatgers del titanic distribuïts en 3 fitxers. El motiu pel qual es dona la informació del dataset en tres registres diferents és per què així és poden comparar els resultats obtinguts amb altres membres de la web Kaggle partint de la mateixa informació.
+
+Els fitxers que componen el dataset són:
+
+* **train.csv**: Conté totes les variables dels passatgers que es poden utilitzar per l'etapa d'entrenament d'un model.
+
+* **test.csv**: Conté totes les variables menys la classe (si sobreviu o no) per poder testejar els models creats amb les dades del fitxer d'entrenament.
+
+* **gender_submission.csv**: Conté la classe dels passatgers (si sobreviuen o no) vinculada a l'identificador de cada passatger.
+
+Un cop descarregat des de l'enllaç proporcionat, carreguem les dades a l'entorn de treball amb la següent comanda: 
+
+```{r}
+train_raw <- read.csv("data/train.csv", sep=',', stringsAsFactors = TRUE)
+test_raw <- read.csv("data/test.csv", sep=',', stringsAsFactors = TRUE)
+test_class_raw <- read.csv("data/gender_submission.csv", sep=',', stringsAsFactors = TRUE)
+```
+
+Comprovem que s'ha carregat correctament:
+
+```{r}
+summary(train_raw)
+summary(test_raw)
+summary(test_class_raw)
+```
+
+## Variables del dataset
+
+```{r}
+
+```
+
+# Preprocessament
+
+
+
+## Gestió de valors buits o nul
+
+
+
+## Gestió de valors extrems (outliers)
+
+
+
+## Discretització
+
+
+
+# Anàlisis de les dades
+
+
+
+# Mètodes de predicció
+
+
+
+## Mètodes de regressió
+
+
+
+## Arbres de decisió
+
+
+
+## Mètodes d'agregació
+
+
+
+# Conclusions
+
+
+
+# Bibliografia
+
+- Gibergans, J. (2019). Regressió lineal simple. Editorial UOC.
+
+- Gibergans, J. (2019). Regressió lineal múltiple. Editorial UOC.
+
+- Guillén, M., Alonso, M. T. (2019). Models de regressió logística. Editorial UOC.
+
+- Liviano, D., Pujol, M. (2019). Models de regressió i anàlisi multivariant amb R-Commander. Editorial UOC.
+
