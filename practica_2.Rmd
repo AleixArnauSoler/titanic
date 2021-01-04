@@ -1,44 +1,95 @@
 ---
-title: 'Tipologia i cicle de vida de les dades: Pràctica 2'
-author: "Autor: Adrià Tarradas i Aleix Soler"
+title: 'Tipologia i cicle de vida de les dades'
+subtitle: 'Pràctica 2: Neteja i anàlisi de les dades'
+authors: "Autor: Adrià Tarradas i Aleix Arnau Soler"
 date: "Desembre 2020"
 output:
+  pdf_document:
+    highlight: zenburn
+    toc: yes
   html_document:
     highlight: default
     number_sections: yes
     theme: cosmo
     toc: yes
     toc_depth: 2
-  pdf_document:
-    highlight: zenburn
-    toc: yes
   word_document: default
+header-includes:
+   - \usepackage[justification=raggedright,labelfont=bf,singlelinecheck=false]{caption}
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-* **Càrrega de llibreries**
-
 ```{r, include=FALSE}
+#Càrrega de llibreries
+
 library("readr")
 library("stringr")
+library(kableExtra)
+library(tibble)
+library(dplyr)
+library(ggplot2)
+library(plyr)
+library(ggpubr)
 ```
 
-# Presentació del dataset
+\newpage
 
-El dataset que utilitzarem en aquesta pràctica és *Titanic: Machine Learning from Disaster*, disponible a [aquí](https://www.kaggle.com/c/titanic). Aquest conjunt de dades està compost per diversos registres dels passatgers del titanic distribuïts en 3 fitxers. El motiu pel qual es dona la informació del dataset en tres registres diferents és per què així és poden comparar els resultats obtinguts amb altres membres de la web Kaggle partint de la mateixa informació.
+# 1. Presentació del projecte de ciència de dades
+
+# 1.1. Background
+
+L’enfonsament del Titanic és un dels naufragis més famosos de la història.
+El 15 d'abril de 1912, durant el seu viatge inaugural, el considerat "inenfonsable" RMS Titanic es va enfonsar després de xocar amb un iceberg. Malauradament, no hi havia prou bots salvavides per a tothom a bord, cosa que va provocar la mort de 1502 de 2224 passatgers i tripulants. Tot i que hi va haver algun element de sort per sobreviure, sembla ser que alguns grups de persones tenien més probabilitats de sobreviure que d’altres.
+
+# 1.2. Objectiu
+
+L'objectiu d'aquesta pràctica és la creació final d'un o varis models predictius que responguin a la pregunta: **"quin tipus de persones tenien més probabilitats de sobreviure?"**. Per això, caldrà primer netejar i analitzar les dades dels passatgers a bord del RMS Titanic (*i.e.* nom, edat, sexe, classe socioeconòmica, etc.) abans de construir els models per a predir quins passatgers van sobreviure a l'enfonsament del Titanic.
+
+# 1.3. Descripció del dataset
+
+El dataset que utilitzarem en aquesta pràctica és *Titanic: Machine Learning from Disaster*, disponible clicant a [*aquí*](https://www.kaggle.com/c/titanic). 
+
+Aquest conjunt de dades està compost per diversos atributs/característiques dels passatgers del titanic distribuïts en 2 fitxers: un dataset per entrenar els models i un altre per a testar-los. A més, s'incou un fitxer amb la predicció de la supervivencia dels passatgers (codificat com a 0: mort o 1: sobreviu) que assumeix que totes les dones, i només les dones, sobreviuen. Obviament, aquestes prediccions són irreals pero ens serveixen com a exemple de com hauria de ser el fitxer final amb les prediccions de supervivencia en cas de que es participés a una de les competició de [*Kaggle*](https://www.kaggle.com/). És per aquest motiu que les dades es proporcionen ja semparades en un dataset d'entrenament i un dataset de testeig, ja que així tots els membres que participen a la cometició de la web Kaggle parteixen de la mateixa informació i dades, i per tant es poden comparar entre ells els resultats obtinguts amb els diferents models implentats. 
+
 
 Els fitxers que componen el dataset són:
 
-* **train.csv**: Conté totes les variables dels passatgers que es poden utilitzar per l'etapa d'entrenament d'un model.
+* **train.csv**: Conté totes les dades i variables d'un subgrup dels passatgers a bord del RMS Titanic (891 passatgers i tripulants), a més de la variable que ens indica si aquell passatger va morir o sobreviure. Aquest dataset serà el que s'utilitzarà per l'entrenament d'un model.
 
-* **test.csv**: Conté totes les variables menys la classe (si sobreviu o no) per poder testejar els models creats amb les dades del fitxer d'entrenament.
+* **test.csv**: Conté totes les dades i variables d'un subgrup més petit que l'anterior dels passatgers a bord del RMS Titanic (en aquest cas 418 passatgers i tripulants) amb l'excepció de que aquest dataset no conté la variable que ens indica si el passatger va sobreviure o no. Aquestes dades s'utilitzaran per a poder testejar els models creats amb les dades del dataset d'entrenament.
 
-* **gender_submission.csv**: Conté la classe dels passatgers (si sobreviuen o no) vinculada a l'identificador de cada passatger.
+* **gender_submission.csv**: Conté la classe dels passatgers (si sobreviuen o no) vinculada a l'identificador de cada passatger, assumint que totes les dones, i només les dones, haguessin sobreviscut.
 
-Un cop descarregat des de l'enllaç proporcionat, carreguem les dades a l'entorn de treball amb la següent comanda: 
+Cada passatger conté informació de les següents variables:
+
+```{r  include=FALSE}
+table<-matrix(c("PassangerID","Survived","Pclass","Name","Sex","Age","SibSp","Parch","Ticket","Fare","Cabin","Embarked","Número identificador del passatger","Enter que indica si el passatger va sobreviure l'enfonsament o no","Enter que indica el tipus de tiquet del passatger","Títol/Nom del passatger","Sexe del passatger","Edat del passatger (anys)","Número de cònjuges i germans del passatger a bord","Número de pares i fills del passatger a bord","Número del tiquet del passatger","Preu pagat/Tarifa del viatge","Número de cabina","Port en el que ha embarcat el passatger","","0 = No, 1 = Sí","1 = 1a classe, 2 = 2a classe, 3 = 3a classe","","","","","","","","C = Cherbourg, Q = Queenstown, S = Southampton"),ncol=3)
+colnames(table)<-c("Variables","Definició","Codificació")
+rownames(table)<-c("","","","","","","","","","","","")
+table_contributions<-as.table(table)
+table_contributions
+```
+
+\newpage
+```{r ,echo=FALSE}
+knitr::kable(table_contributions, caption = "Data diccionary: resum de les variables del dataset 'Titanic: Machine Learning from Disaster'.")%>% 
+  kable_styling(latex_options="scale_down")
+```
+
+Notes a tenir en compte:
+* La variable **pclass** ens serveix com a indicador indirecte del nivell socioeconomic del passatger (alt: 1a classe, mitjà: 2a classe, baix: 3a classe).
+* L'edat dels menors d'1 any està codificada com la fracció d'any que tenen. Les edats és mostren com a fraccions on en alguns casos s'indica' el 'i mig' (e.g. 35.50 = 35 anys i mig)
+* Alguns nens viatjaven amb una mainadera, per tant és possible que per algun d'ells 'parch' sigui 0.
+
+\newpage
+# 2. Neteja de dades
+
+# 2.1. Integració i comprobació
+
+Un cop les dades s'han descarregat des de l'enllaç proporcionat, carreguem les dades a l'entorn de treball.
 
 ```{r}
 train_raw <- read.csv("data/train.csv", sep=',', stringsAsFactors = FALSE)
@@ -46,51 +97,98 @@ test_raw <- read.csv("data/test.csv", sep=',', stringsAsFactors = FALSE)
 test_class_raw <- read.csv("data/gender_submission.csv", sep=',', stringsAsFactors = FALSE)
 ```
 
-Comprovem que s'ha carregat correctament:
+Primer inspeccionem els datasets
+```{r}
+head(train_raw)
+```
+```{r}
+head(test_raw)
+```
 
 ```{r}
+head(test_class_raw)
+```
+
+Primer de tot extreurem la variable 'Survived' del dataset d'entrenament en un format igual al dataset 'gender_submission.csv' ja que aquesta no ens farà falta de moment i així podem integrar els dos datasets en un de sol per a dur a terme la neteja, inspecció i analisis en un sol dataset.
+
+```{r}
+train_predictions<-train_raw[,c("PassengerId","Survived")]
+train_raw<-train_raw[,-2]
+```
+
+Comprovem que les dades s'han carregat correctamen i les inspeccionem.
+Dataset d'entrenament:
+```{r}
+# Comprovem que les dimensions del dataset siguin les esperades
+dim(train_raw)
+# Comprovem en quina classe es troben les variables
+sapply(train_raw,class)
+# Comprovem l'estructura
 str(train_raw)
-str(test_raw)
-str(test_class_raw)
+# Inspeccionem alguns parametres bàsics
+summary(train_raw)
+# Inspeccionem les dades
+glimpse(train_raw)
 ```
 
-## Variables del dataset
+Dataset de testeig:
+```{r}
+# Comprovem que les dimensions del dataset siguin les esperades
+dim(test_raw)
+# Comprovem en quina classe es troben les variables
+sapply(test_raw,class)
+# Comprovem l'estructura
+str(test_raw)
+# Inspeccionem alguns parametres bàsics
+summary(test_raw)
+# Inspeccionem les dades
+glimpse(test_raw)
+```
 
-Cada passatger conté informació de les següents variables:
+Les dimensions són les esperades i el format és equivalent entre els dos datasets.
+```{r}
+head(train_raw)
+head(test_raw)
+```
+Integrem les dades dels dos datasets en un de sol.
+```{r}
+dataset<-rbind(train_raw,test_raw)
+head(dataset)
+dim(dataset)
+```
 
-- **PassengerId**: Número identificador del passatger
-
-- **Survived**: Enter que indica si el passatger va sobreviure l'enfonsament o no (0 = No, 1 = Sí) 
-
-- **Pclass**: Enter que indica el tipus de tiquet del passatger (1 = 1a classe, 2 = 2a classe, 3 = 3a classe)
-
-- **Name**: Nom del passatger
-
-- **Sex**: Sexe del passatger
-
-- **Age**: Edat del passatger
-
-- **SibSp**: Número de cònjuges i germans del passatger a bord
-
-- **Parch**: Número de pares i fills del passatger a bord
-
-- **Ticket**: Número del tiquet del passatger.
-
-- **Fare**: Preu pagat pel viatge 
-
-- **Cabin**: Número de la cabina
-
-- **Embarked**: Port en el que ha embarcat el passatger (C = Cherbourg, Q = Queenstown, S = Southampton)
+A partir de la informació observada decidim canviar les classes d'algunes variables.
 
 ```{r}
-summary(train_raw)
+dataset <- within(dataset, {
+  Pclass <- factor(Pclass)
+  Sex <- factor(Sex)
+  Age <- as.integer(Age)
+  Embarked <- factor(Embarked)
+})
+
 ```
 
-# Preprocessament
+Tornem a inspeccionar:
 
-## Gestió de valors buits o nul
+```{r}
+# Inspeccionem les dades
+glimpse(dataset)
+```
 
-Creem una funció que indica les variables que contenen valors nul i l'executem passant-li el dataset que hem carregat:
+**Observacions:**
+
+* Les dimensions són les esperades.
+* De la variable 'Name' es poden extreure els títols d'algunes persones.
+* La variable 'Sex' es podria codificar de forma binaria.
+* La variable 'Fare' sembla representar el preu total pagat alhora de comprar més d'un tiquet junts (e.g. families) envés del tiquet individual.
+* Podem crear 'dummy' variables per a les variables 'Pclass', 'Sex' i 'Embarked'
+* De la variable 'cabin' es pot extreure la lletra que segurament representa diferentes zones del vaixell.
+* Dels resultats de la funció summary() i glimpse() es pot veure com tenim varis valors nuls o mencants en les variables: Age, Fare, Cabin i Embarked
+
+## 2.2. Gestió de valors buits o nul
+
+Creem una funció que indica les variables que contenen valors nul i l'executem passant-li el dataset que hem carregat.
 
 ```{r}
 has_na <- function(dades) {
@@ -108,17 +206,126 @@ has_na <- function(dades) {
 }
 ```
 
-Un cop creada la funció l'executem per saber quines variables tenen valors nul en els diferents fitxers:
-
+Un cop creada la funció l'executem per saber quines variables tenen valors nul en els diferents datasets.
+Dataset d'entrenament:
 ```{r}
-has_na(train_raw)
-has_na(test_raw)
-has_na(test_class_raw)
+has_na(dataset)
 ```
 
-## Gestió de valors extrems (outliers)
+**La variable Cabin i Embarket també tenen valors nuls pero com que son empty strings la funcio no els reconeix.**
+** S'hauria de fer aixo: https://www.kaggle.com/c/titanic/discussion/62321
 
-També cal observar els valors extrems de les variables numèriques i considerar si es corresponen a valors errònis que cal evitar o bé són casos extrems que convé mantenir. Per començar l'anàlisi de valors atípics he creat una funció que mostra els diagrames de caixa de les diferents variables numèriques:
+```{r}
+
+
+
+
+
+
+
+
+
+
+```
+
+
+# 2.2. Transformació i creació de variables
+
+# 2.2.1. Creació variable 'Title'
+
+A partir del nom dels passatgers es poden extreure els titols d'algun d'ells. 
+```{r}
+
+# Extreiem el 'titol' de cada passatger. Com que el format dels nomes sempre es el mateix podem seguir una estructura per trobar-los
+dataset$title <- str_sub(dataset$Name, str_locate(dataset$Name, ",")[ , 1] + 2, str_locate(dataset$Name, "\\.")[ , 1] - 1)
+
+# combines els títols dels passatgers en grups segons si considerem que formen part de la noblesa (i.e. tenen algun títol, o no)
+# Titols nobles per homes
+names_noblesa <- c("Capt", "Col", "Don", "Dr", "Jonkheer", "Major", "Rev", "Sir","Lady", "Mlle", "Mme", "Ms", "the Countess", "Dona")
+dataset$title[dataset$title %in% names_noblesa] <- "noble"
+dataset$title<-factor(dataset$title)
+# Comprobem el resultat final
+table(dataset$title)
+
+```
+
+# 2.2.2. Creació variable 'Zona'
+
+De la variable 'cabin' extreiem la lletra que segurament representa la zona del vaixell on es troba la cabina.
+```{r}
+dataset$Zona <- dataset %>%
+  select(Cabin) %>%
+  mutate(Zona = factor(str_extract(Cabin, pattern = "^.")))
+
+```
+
+# 2.2.3. Creació variable 'Familiy_Size'
+
+El tamany de les families es pot inferir a partir de les variables 'SibSp' i 'Parch'. A més, tota aquella gent que comparteixi cognom és probable que formin part de la mateixa familia.
+Dataset d'entrenament:
+
+```{r}
+#Creem la variable 'Familiy_name"
+dataset$Family_name <- str_replace(string = dataset$Name, pattern = ",.*", replacement = "")
+
+#Visualitzem les dades
+dataset %>%
+  select(Name, Family_name) %>%
+  head(10)
+
+#Ceem la variable 'Family_size' (sumem 1 per assegurar-nos de que el passatger també es té en compte en la seva propia familia)
+dataset <- dataset %>%
+  mutate(Family_size = SibSp + Parch + 1)
+
+#Visualitzem les dades
+dataset %>%
+  select(Family_name, SibSp, Parch, Family_size) %>%
+   arrange(Family_name)%>%
+  head(10)
+
+```
+Categorizem el tamany de les families segons si el passatger va sol, en familia/grup gran o petit
+```{r}
+
+dataset <- dataset %>%
+  mutate(FamilyCat = factor(case_when(Family_size == 1 ~ 'sol'
+                            ,Family_size > 1 & Family_size < 5 ~ 'petita'
+                            ,Family_size >= 5 ~ 'gran')))
+
+
+```
+
+# 2.2.4. Creació variable 'Price_Person'
+
+```{r}
+
+dataset$Price_Per_Person<-dataset$Fare/dataset$Family_size
+
+
+```
+
+
+```{r}
+# Use semi-transparent fill
+p_fare<-ggplot(dataset[which(dataset$Fare<100),], aes(x=Fare, fill=Pclass)) +
+  geom_density(alpha=0.4)
+p_fare
+
+```
+
+```{r}
+# Use semi-transparent fill
+p_priceperson<-ggplot(dataset[which(dataset$Price_Per_Person<100),], aes(x=Price_Per_Person, fill=Pclass)) +
+  geom_density(alpha=0.4)
+p_priceperson
+
+```
+
+# 2.3. Gestió de valors extrems (outliers)
+
+També cal observar els valors extrems de les variables numèriques i considerar si es corresponen a valors errònis que cal evitar o bé són casos extrems que convé mantenir. Com hem vist enteriorment, tenim 4 variables a considerar: Age, SibSp, Parch i Fare.
+
+Per començar l'anàlisi de valors atípics hem creat una funció que mostra els diagrames de caixa de les diferents variables numèriques:
 
 ```{r}
 mostrar_diag_caixa <- function(dades, variables_numeriques) {
@@ -147,21 +354,84 @@ deteccio_valors_atipics <- function(dades,variables_numeriques) {
 Un cop creades les funcions, les cridem passant-los hi les dades de cada fitxer i un vector amb el nom de les variables numèriques que contenen:
 
 ```{r}
-mostrar_diag_caixa(train_raw,c("Age","SibSp","Fare"))
+mostrar_diag_caixa(train_raw,c("Age","SibSp","Parch","Fare"))
 ```
 
 ```{r}
 deteccio_valors_atipics(train_raw,c("Age","SibSp","Fare"))
 ```
 
-## Discretització
+\newpage
+# 3. Anàlisis de les dades
+
+```{r}
 
 
 
-# Anàlisis de les dades
+
+```
+
+
+```{r}
 
 
 
+
+```
+
+
+
+```{r}
+
+
+
+
+```
+
+
+```{r}
+
+
+
+
+```
+
+
+
+
+
+
+
+Integrem les dades del dataset de test amb les dades de les seves corresponents prediccions de supervivencia si les dones, i només les dones, haguessin sobreviscut.
+```{r}
+names(test_class_raw)[2]<-"AllWomenSurvived"
+test_dataset<-merge(test_raw,test_class_raw,by = 'PassengerId')
+head(test_dataset)
+```
+
+
+
+.............................
+Compare the passenger Class with their position on the Deck
+table(cabin_deck$Deck, cabin_deck$Pclass)
+
+#Calculate the correlation of the 2 variables
+cabin_deck %>% select(Pclass, Deck) %>%
+  map_df(as.numeric) %>%
+  cor(., use = 'complete.obs',method = 'pearson')
+
+..............................
+
+..............................
+#plot the data  
+ggplot(missing_fare_subset, aes(x = Fare)) +
+  geom_density(fill = 'forestgreen') +
+  scale_x_continuous(label = dollar_format(), breaks = seq(0, 60, by = 10)) +
+  ggtitle("Density Distribution of Fares for 3rd Class Male Passengers Embarking from Southampton", subtitle = "n = 365")
+..............................  
+  
+  
+  
 # Mètodes de predicció
 
 
@@ -191,4 +461,3 @@ deteccio_valors_atipics(train_raw,c("Age","SibSp","Fare"))
 - Guillén, M., Alonso, M. T. (2019). Models de regressió logística. Editorial UOC.
 
 - Liviano, D., Pujol, M. (2019). Models de regressió i anàlisi multivariant amb R-Commander. Editorial UOC.
-
