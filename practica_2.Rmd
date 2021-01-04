@@ -1,7 +1,7 @@
 ---
 title: 'Tipologia i cicle de vida de les dades'
 subtitle: 'Pràctica 2: Neteja i anàlisi de les dades'
-authors: "Autor: Adrià Tarradas i Aleix Arnau Soler"
+author: "Autors: Adrià Tarradas i Aleix Arnau Soler"
 date: "Desembre 2020"
 output:
   pdf_document:
@@ -39,16 +39,16 @@ library(ggpubr)
 
 # 1. Presentació del projecte de ciència de dades
 
-# 1.1. Background
+## 1.1. Background
 
 L’enfonsament del Titanic és un dels naufragis més famosos de la història.
 El 15 d'abril de 1912, durant el seu viatge inaugural, el considerat "inenfonsable" RMS Titanic es va enfonsar després de xocar amb un iceberg. Malauradament, no hi havia prou bots salvavides per a tothom a bord, cosa que va provocar la mort de 1502 de 2224 passatgers i tripulants. Tot i que hi va haver algun element de sort per sobreviure, sembla ser que alguns grups de persones tenien més probabilitats de sobreviure que d’altres.
 
-# 1.2. Objectiu
+## 1.2. Objectiu
 
 L'objectiu d'aquesta pràctica és la creació final d'un o varis models predictius que responguin a la pregunta: **"quin tipus de persones tenien més probabilitats de sobreviure?"**. Per això, caldrà primer netejar i analitzar les dades dels passatgers a bord del RMS Titanic (*i.e.* nom, edat, sexe, classe socioeconòmica, etc.) abans de construir els models per a predir quins passatgers van sobreviure a l'enfonsament del Titanic.
 
-# 1.3. Descripció del dataset
+## 1.3. Descripció del dataset
 
 El dataset que utilitzarem en aquesta pràctica és *Titanic: Machine Learning from Disaster*, disponible clicant a [*aquí*](https://www.kaggle.com/c/titanic). 
 
@@ -85,9 +85,9 @@ Notes a tenir en compte:
 * Alguns nens viatjaven amb una mainadera, per tant és possible que per algun d'ells 'parch' sigui 0.
 
 \newpage
-# 2. Neteja de dades
 
-# 2.1. Integració i comprobació
+
+# 2. Integració i comprobació
 
 Un cop les dades s'han descarregat des de l'enllaç proporcionat, carreguem les dades a l'entorn de treball.
 
@@ -186,7 +186,9 @@ glimpse(dataset)
 * De la variable 'cabin' es pot extreure la lletra que segurament representa diferentes zones del vaixell.
 * Dels resultats de la funció summary() i glimpse() es pot veure com tenim varis valors nuls o mencants en les variables: Age, Fare, Cabin i Embarked
 
-## 2.2. Gestió de valors buits o nul
+# 3. Neteja de dades
+
+## 3.1. Gestió de valors buits o nul
 
 Creem una funció que indica les variables que contenen valors nul i l'executem passant-li el dataset que hem carregat.
 
@@ -229,9 +231,9 @@ has_na(dataset)
 ```
 
 
-# 2.2. Transformació i creació de variables
+## 3.2. Creació de variables
 
-# 2.2.1. Creació variable 'Title'
+### 3.2.1. Creació variable 'Title'
 
 A partir del nom dels passatgers es poden extreure els titols d'algun d'ells. 
 ```{r}
@@ -249,17 +251,18 @@ table(dataset$title)
 
 ```
 
-# 2.2.2. Creació variable 'Zona'
+### 3.2.2. Creació variable 'Zona'
 
 De la variable 'cabin' extreiem la lletra que segurament representa la zona del vaixell on es troba la cabina.
 ```{r}
-dataset$Zona <- dataset %>%
+Zona <- dataset %>%
   select(Cabin) %>%
   mutate(Zona = factor(str_extract(Cabin, pattern = "^.")))
 
+dataset$Zona<-Zona$Zona
 ```
 
-# 2.2.3. Creació variable 'Familiy_Size'
+### 3.2.3. Creació variable 'Familiy_Size'
 
 El tamany de les families es pot inferir a partir de les variables 'SibSp' i 'Parch'. A més, tota aquella gent que comparteixi cognom és probable que formin part de la mateixa familia.
 Dataset d'entrenament:
@@ -295,7 +298,7 @@ dataset <- dataset %>%
 
 ```
 
-# 2.2.4. Creació variable 'Price_Person'
+### 3.2.4. Creació variable 'Price_Person'
 
 ```{r}
 
@@ -321,7 +324,27 @@ p_priceperson
 
 ```
 
-# 2.3. Gestió de valors extrems (outliers)
+## 3.3. Exploració i transformació de variables
+
+
+```{r}
+
+
+
+
+```
+
+
+```{r}
+
+
+
+
+```
+
+
+
+## 3.4. Gestió de valors extrems (outliers)
 
 També cal observar els valors extrems de les variables numèriques i considerar si es corresponen a valors errònis que cal evitar o bé són casos extrems que convé mantenir. Com hem vist enteriorment, tenim 4 variables a considerar: Age, SibSp, Parch i Fare.
 
@@ -361,8 +384,22 @@ mostrar_diag_caixa(train_raw,c("Age","SibSp","Parch","Fare"))
 deteccio_valors_atipics(train_raw,c("Age","SibSp","Fare"))
 ```
 
+### 3.4. Datasets final
+```{r}
+# El dataset final
+dataset_final<-merge(dataset,train_predictions,by = "PassengerId", all = T)
+
+# El dataset final d'entrenament
+dataset_train<-dataset_final[which(!(is.na(dataset_final$Survived))),]
+dim(dataset_train)
+
+# El dataset final de test
+dataset_test<-dataset_final[which(is.na(dataset_final$Survived)),]
+dim(dataset_test)
+```
+
 \newpage
-# 3. Anàlisis de les dades
+# 4. Anàlisis de les dades
 
 ```{r}
 
@@ -388,6 +425,14 @@ deteccio_valors_atipics(train_raw,c("Age","SibSp","Fare"))
 
 ```
 
+# 5. Resultats finals
+```{r}
+
+
+
+
+```
+
 
 ```{r}
 
@@ -395,6 +440,34 @@ deteccio_valors_atipics(train_raw,c("Age","SibSp","Fare"))
 
 
 ```
+
+```{r}
+
+
+
+
+```
+
+# 6. Conclusions
+```{r}
+
+
+
+
+```
+
+
+# 7. Bibliografia
+
+- Gibergans, J. (2019). Regressió lineal simple. Editorial UOC.
+
+- Gibergans, J. (2019). Regressió lineal múltiple. Editorial UOC.
+
+- Guillén, M., Alonso, M. T. (2019). Models de regressió logística. Editorial UOC.
+
+- Liviano, D., Pujol, M. (2019). Models de regressió i anàlisi multivariant amb R-Commander. Editorial UOC.
+
+
 
 
 
@@ -432,32 +505,15 @@ ggplot(missing_fare_subset, aes(x = Fare)) +
   
   
   
-# Mètodes de predicció
 
 
 
-## Arbres de decisió
+
+Mètodes de predicció
+Arbres de decisió
+Mètodes d'agregació
 
 
 
-## Mètodes d'agregació
 
 
-
-## 
-
-
-
-# Conclusions
-
-
-
-# Bibliografia
-
-- Gibergans, J. (2019). Regressió lineal simple. Editorial UOC.
-
-- Gibergans, J. (2019). Regressió lineal múltiple. Editorial UOC.
-
-- Guillén, M., Alonso, M. T. (2019). Models de regressió logística. Editorial UOC.
-
-- Liviano, D., Pujol, M. (2019). Models de regressió i anàlisi multivariant amb R-Commander. Editorial UOC.
