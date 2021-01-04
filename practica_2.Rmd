@@ -41,36 +41,118 @@ Els fitxers que componen el dataset són:
 Un cop descarregat des de l'enllaç proporcionat, carreguem les dades a l'entorn de treball amb la següent comanda: 
 
 ```{r}
-train_raw <- read.csv("data/train.csv", sep=',', stringsAsFactors = TRUE)
-test_raw <- read.csv("data/test.csv", sep=',', stringsAsFactors = TRUE)
-test_class_raw <- read.csv("data/gender_submission.csv", sep=',', stringsAsFactors = TRUE)
+train_raw <- read.csv("data/train.csv", sep=',', stringsAsFactors = FALSE)
+test_raw <- read.csv("data/test.csv", sep=',', stringsAsFactors = FALSE)
+test_class_raw <- read.csv("data/gender_submission.csv", sep=',', stringsAsFactors = FALSE)
 ```
 
 Comprovem que s'ha carregat correctament:
 
 ```{r}
-summary(train_raw)
-summary(test_raw)
-summary(test_class_raw)
+str(train_raw)
+str(test_raw)
+str(test_class_raw)
 ```
 
 ## Variables del dataset
 
-```{r}
+Cada passatger conté informació de les següents variables:
 
+- **PassengerId**: Número identificador del passatger
+
+- **Survived**: Enter que indica si el passatger va sobreviure l'enfonsament o no (0 = No, 1 = Sí) 
+
+- **Pclass**: Enter que indica el tipus de tiquet del passatger (1 = 1a classe, 2 = 2a classe, 3 = 3a classe)
+
+- **Name**: Nom del passatger
+
+- **Sex**: Sexe del passatger
+
+- **Age**: Edat del passatger
+
+- **SibSp**: Número de cònjuges i germans del passatger a bord
+
+- **Parch**: Número de pares i fills del passatger a bord
+
+- **Ticket**: Número del tiquet del passatger.
+
+- **Fare**: Preu pagat pel viatge 
+
+- **Cabin**: Número de la cabina
+
+- **Embarked**: Port en el que ha embarcat el passatger (C = Cherbourg, Q = Queenstown, S = Southampton)
+
+```{r}
+summary(train_raw)
 ```
 
 # Preprocessament
 
-
-
 ## Gestió de valors buits o nul
 
+Creem una funció que indica les variables que contenen valors nul i l'executem passant-li el dataset que hem carregat:
 
+```{r}
+has_na <- function(dades) {
+  no_na <- TRUE
+  for (i in names(dades)) {
+    a <- sum(is.na(dades[[i]]))
+    if (a != 0) {
+      no_na <- FALSE
+      print(paste("La variable ", i, " té ", a, " valors nul"))
+    }
+  }
+  if (no_na) {
+    print("No hi ha cap variable amb valors nul")
+  }
+}
+```
+
+Un cop creada la funció l'executem per saber quines variables tenen valors nul en els diferents fitxers:
+
+```{r}
+has_na(train_raw)
+has_na(test_raw)
+has_na(test_class_raw)
+```
 
 ## Gestió de valors extrems (outliers)
 
+També cal observar els valors extrems de les variables numèriques i considerar si es corresponen a valors errònis que cal evitar o bé són casos extrems que convé mantenir. Per començar l'anàlisi de valors atípics he creat una funció que mostra els diagrames de caixa de les diferents variables numèriques:
 
+```{r}
+mostrar_diag_caixa <- function(dades, variables_numeriques) {
+  mida <- ceiling(sqrt(length(variables_numeriques)))
+  par(mfrow=c(2,2))
+  for (i in variables_numeriques) {
+    boxplot(dades[[i]], main=i, horizontal = TRUE)
+  }
+}
+```
+
+I una altra que indica textualment els valors atípics d'una variable:
+
+```{r}
+deteccio_valors_atipics <- function(dades,variables_numeriques) {
+  for (i in variables_numeriques) {
+    valors_atipics <- boxplot.stats(dades[[i]])$out
+    if (length(valors_atipics != 0)) {
+      print(paste("La variable", i, "té els valors atípics: "))
+      print(valors_atipics)
+    }
+  }
+}
+```
+
+Un cop creades les funcions, les cridem passant-los hi les dades de cada fitxer i un vector amb el nom de les variables numèriques que contenen:
+
+```{r}
+mostrar_diag_caixa(train_raw,c("Age","SibSp","Fare"))
+```
+
+```{r}
+deteccio_valors_atipics(train_raw,c("Age","SibSp","Fare"))
+```
 
 ## Discretització
 
@@ -84,15 +166,15 @@ summary(test_class_raw)
 
 
 
-## Mètodes de regressió
-
-
-
 ## Arbres de decisió
 
 
 
 ## Mètodes d'agregació
+
+
+
+## 
 
 
 
