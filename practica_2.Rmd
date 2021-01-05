@@ -42,18 +42,18 @@ library(e1071)
 
 \newpage
 
-# 1. Presentació del projecte de ciència de dades
+# Presentació del projecte de ciència de dades
 
-## 1.1. Background
+## Background
 
 L’enfonsament del Titanic és un dels naufragis més famosos de la història.
 El 15 d'abril de 1912, durant el seu viatge inaugural, el considerat "inenfonsable" RMS Titanic es va enfonsar després de xocar amb un iceberg. Malauradament, no hi havia prou bots salvavides per a tothom a bord, cosa que va provocar la mort de 1502 de 2224 passatgers i tripulants. Tot i que hi va haver algun element de sort per sobreviure, sembla ser que alguns grups de persones tenien més probabilitats de sobreviure que d’altres.
 
-## 1.2. Objectiu
+## Objectiu
 
 L'objectiu d'aquesta pràctica és la creació final d'un o varis models predictius que responguin a la pregunta: **"quin tipus de persones tenien més probabilitats de sobreviure?"**. Per això, caldrà primer netejar i analitzar les dades dels passatgers a bord del RMS Titanic (*i.e.* nom, edat, sexe, classe socioeconòmica, etc.) abans de construir els models per a predir quins passatgers van sobreviure a l'enfonsament del Titanic.
 
-## 1.3. Descripció del dataset
+## Descripció del dataset
 
 El dataset que utilitzarem en aquesta pràctica és *Titanic: Machine Learning from Disaster*, disponible clicant a [*aquí*](https://www.kaggle.com/c/titanic). 
 
@@ -94,7 +94,7 @@ Notes a tenir en compte:
 
 \newpage
 
-# 2. Integració i comprobació
+# Integració i comprobació
 
 Un cop les dades s'han descarregat des de l'enllaç proporcionat, carreguem les dades a l'entorn de treball.
 
@@ -200,9 +200,9 @@ glimpse(dataset)
 * Dels resultats de la funció summary() i glimpse() es pot veure com tenim varis valors nuls o mencants en les variables: Age, Fare, Cabin i Embarked
 
 \newpage
-# 3. Neteja de dades
+# Neteja de dades
 
-## 3.1. Gestió de valors buits o nul
+## Gestió de valors buits o nul
 
 Creem una funció que indica les variables que contenen valors nul i l'executem passant-li el dataset que hem carregat.
 
@@ -468,9 +468,9 @@ names(dataset_imputed)[2]<-'Age_imp'
 dataset<-merge(dataset,dataset_imputed,by = 'PassengerId')
 ```
 
-## 3.2. Creació de variables
+## Creació de variables
 
-### 3.2.1. Creació variable 'Title'
+### Creació variable 'Title'
 
 A partir del nom dels passatgers es poden extreure els titols d'algun d'ells. 
 
@@ -487,7 +487,7 @@ dataset$title<-factor(dataset$title)
 table(dataset$title)
 ```
 
-### 3.2.2. Creació variable 'Zona'
+### Creació variable 'Zona'
 
 De la variable 'cabin' extreiem la lletra que segurament representa la zona del vaixell on es troba la cabina.
 
@@ -507,7 +507,7 @@ for (i in 1:length(dataset$Zona)){
 dataset$Zona<-factor(dataset$Zona)
 ```
 
-### 3.2.3. Creació variable 'Familiy_Size' i 'FamilyCat'
+### Creació variable 'Familiy_Size' i 'FamilyCat'
 
 El tamany de les families es pot inferir a partir de les variables 'SibSp' i 'Parch'. A més, tota aquella gent que comparteixi cognom és probable que formin part de la mateixa familia.
 Dataset d'entrenament:
@@ -542,7 +542,7 @@ dataset <- dataset %>%
                             ,Family_size >= 7 ~ 'gran')))
 ```
 
-### 3.2.4. Creació variable 'Price_Person'
+### Creació variable 'Price_Person'
 
 ```{r}
 dataset$Price_Per_Person<-dataset$Fare/dataset$Family_size
@@ -574,7 +574,7 @@ has_na(dataset)
 table(dataset$Embarked,useNA='always')
 ```
 
-### 3.2.5. Creació variable 'AgeCat'
+### Creació variable 'AgeCat'
 
 Categorizem l'edat dels passatgers en intervals de 5 anys amb l'objectiu de poder utilitzar aquesta variable a l'hora d'aplicar mètodes que utilitzen atributs categòrics en l'etapa d'anàlisi.
 
@@ -591,7 +591,7 @@ table(dataset$AgeCat,useNA='always')
 ```
 
 
-### 3.2.6. Creació variable 'PriceCat'
+### Creació variable 'PriceCat'
 
 Com hem vist abans, la distribució del preu per persona (Price_Per_Person) segons classe en la que viatgen els passatgers sembla indicar que tenim un preu de referencia del tiquet segons la classe en la que es viatges. Així doncs, hem decidit discretitzar la variable Price_Per_Person en tres grups: preu baix, mig i alt.  
 
@@ -603,7 +603,7 @@ dataset["PriceCat"] <- cut(dataset$Price_Per_Person, breaks = c(-1,9,18,513), la
 ```
 
 
-## 3.3. Gestió de valors extrems (outliers)
+## Gestió de valors extrems (outliers)
 
 Els outliers són valors extrems que es trobem molt lluny de la distribució normal o esperada d’un atribut. De forma formal es solen definir com aquells valors que es troben a més de 3 desviacions estàndards de la mitjana, tot i que altres consideren definicions més estrictes com més enllà de 6 desviacions estàndards de la mitjana. Aquests poden incrementar l’error en la variància i conseqüentment reduir el poder estadístic d’un test alhora de fer estimacions significatives, o que aquestes estimacions estiguin esbiaixades. A més, la presència d’aquests pot afectar dràsticament a la mitjana. 
 
@@ -651,7 +651,7 @@ Així doncs considerem que no hi ha outliers a eliminar en les nostres dades fin
 deteccio_valors_atipics(dataset,c("Age_imp","SibSp","Parch","Price_Per_Person","Family_size"))
 ```
 
-## 3.4. Datasets final
+## Datasets final
 
 Primer de tot reduim la dimensionalitat del nostre dataset actual per a només treballar amb les variables que ens interessa analitzar. Incorporem també les dades de supervivencia en aquells passatgers pels quals coneixem si van sobreviure o no. I guardarem el fitxer com a 'dataset_titanic_clean.csv', el qual conté les dades netes que utilitzarem més endavant per als anàlisis.
 
@@ -687,7 +687,7 @@ dim(dataset_test)
 
 \newpage
 
-# 4. Exploració i anàlisis de variables
+# Exploració i anàlisis de variables
 
 Primer de tot seleccionem tots els grups de cada variable que ens interessa analitzar. Llavors en comprobarem la normalitat i homogeneïtat de la variància de cadascun d'ells.
 
@@ -741,7 +741,7 @@ dataset_final.Viu<-dataset_final[which(dataset_final$Survived=='0'),]
 dataset_final.Mor<-dataset_final[which(dataset_final$Survived=='1'),]
 ```
 
-## 4.1. Comprobació de la normalitat variables quantitatives
+## Comprobació de la normalitat variables quantitatives
 
 Per a comprobar que les variables quantitatives que tenim segueixen una distribució normal utilitzarem el test de Shapiro-Wilk:
 
@@ -774,7 +774,7 @@ shapiro.C2.Price<-shapiro.test(dataset_final.Class2$Price_Per_Person)
 shapiro.C3.Price<-shapiro.test(dataset_final.Class3$Price_Per_Person)
 ```
 
-### 4.1.1. Resultats
+### Resultats
 
 ```{r}
 table_res<-matrix(c(round(mean(dataset_final$Price_Per_Person),2),
@@ -907,7 +907,7 @@ p_AgeClass1<-ggplot(dataset_final.Class1, aes(x=Age_imp)) +
 p_AgeClass1
 ```
 
-## 4.2. Comprovació de l'homoscedasticitat
+## Comprovació de l'homoscedasticitat
 
 Per a comprobar l'homoscedasticitat (i.e. la homogeneitat de la variança) apliquem el test de Fligner-Killen (test no parametric) ja que com hem vist abans cap de les nostres variables continues segueix una distribució normal.
 
@@ -965,7 +965,7 @@ knitr::kable(table_res4, caption = "Test de Fligner-Killeen de homogeneitat de l
 Podem observar que tans sols la variança de l'edat a través de les diferentes zones és homogenia (acceptem la hipotesis de que les variances són homogenies ja que el p-valor > 0.5).
 La variança tant de l'edat com del preu del tiquet no és homogenia entre categories de la resta de variables.
 
-## 4.3. Distribucions de les variables entre passatgers supervivents i no supervivents
+## Distribucions de les variables entre passatgers supervivents i no supervivents
 
 ```{r}
 # Variables continues
@@ -989,7 +989,7 @@ figure_Dis <- ggarrange(p_price,p_age,p_class,p_sex,p_zona,p_familyCat,p_priceCa
 figure_Dis
 ```
 
-## 4.4. Comparació entre dos grups de dades (variables continues)
+## Comparació entre dos grups de dades (variables continues)
 
 Comprovem si hi ha diferencies significatives en la edat i el preu del bitllet entre la gent que va sobreviure i els que van morir.
 
@@ -1001,7 +1001,7 @@ wilcox.test(Age_imp ~ Survived, data = dataset_final[which(!(is.na(dataset_final
 Podem observar que hi ha diferencies significatives entre el preu pagat per tiquet de la gent que va sobreviure (més alt) i la que va morir (més baix)
 En canvi, no s'aprecien diferencies significatives entre la edat de la gent que va sobreviure i la que va morir.
 
-## 4.5. Comparació entre dos grups de dades (variables categoriques)
+## Comparació entre dos grups de dades (variables categoriques)
 
 Mirem si hi ha diferencies entre les proporcions dels diferents grups de les variables categoriques entre la gent que va sobreviure i la que va morir.
 
@@ -1044,7 +1044,7 @@ chisq.test(sup_AgeCat)
 
 Podem observar que hi ha diferencies significatives entre les diferents classes de totes les variables categoriques analitzades entre la gent que va sobreviure i la que va morir.
 
-## 4.6. Correlació entre variables
+## Correlació entre variables
 
 Calculem la correlació entre les variables continues. Utilitzem el metode de "Spearman" ja que les dades no segueixen una distribució normal.
 
@@ -1063,9 +1063,9 @@ corr.res<-cor(dataset_final_cont, method = 'spearman')
 
 \newpage
 
-# 5. Modelització
+# Modelització
 
-## 5.1. Arbre de decisió
+## Arbre de decisió
 
 **Construcció del model**
 
@@ -1177,7 +1177,7 @@ Utilitzant el model basat en arbres de decisió hem obtingut una precisió de 82
 
 També hem pogut veure que la variable que té més pes a l'hora de determinar el destí dels passatgers del titanic és el sexe, el qual té un pes del 93.77% en el model creat. El títol nobiliari del passatger també guarda una forta relació amb el model, mantenint un 62.79%. Finalment trobem que la dimensió de la família i classe dels tiquets també tenen una influència considerable però menor respecte les dues anteriors comentades.
 
-## 5.2. Support Vector Machine
+## Support Vector Machine
 
 **Construcció del model**
 
@@ -1228,7 +1228,7 @@ print(paste("La precisió del model és de ", round(precisio_model_matriu_conf*1
 
 Utilitzant el model basat en SVM obtenim una precisió del 83.16%, lleugerament millor que el que s'ha obtingut utilitzant arbres de decisió.
 
-## 5.3. Regressió logística
+## Regressió logística
 
 **Construcció del model**
 
@@ -1284,7 +1284,7 @@ print(paste("La precisió del model és de ", round(precisio_model_matriu_conf_g
 Utilitzant la regressió logística obtenim una precisió del 83.84%, lleugerament superior a la resta de modelitzacions provades. Observant el resum del model podem veure com les categòries que més influèixen en la decisió de la classe d'un passatger utilitzant aquesta modelització és quan el títol del passatger és noble o simplement Mr (ja que indica que no poseeix cap títol nobiliari i pertany al gènere masculí). També influeix que el passatger viatgi sol o amb poca companyia i el fet de si és o no ancià.
 
 \newpage
-# 6. Predicció
+# Predicció
 
 Arribats a aquest punt hem volgut presentar-hi els nostres resultats a la competició activa de la pàgina Kaggle. Per fer-ho hem predit els registres corresponents al fitxer de test (*test.csv*) utilitzant el model que ens ha donat millors resultats: el model basat en la regressió logística.
 
@@ -1314,7 +1314,7 @@ Finalment generem el fitxer csv que conté la predicció:
 write.csv(df_competition, "out/prediction_comp.csv", row.names=FALSE, quote=FALSE)
 ```
 
-# 7. Resum
+# Resum
 
 Com a resultats principals observats ens agradaria destacar:
 
@@ -1346,17 +1346,15 @@ Com a resultats principals observats ens agradaria destacar:
 
 * Segons l'arbre de decisió, la variable més significativa alhora d'explicar qui sobreviu és el sexe, seguit del titol, el tamany de la familia i la classe en que es viatjava.
 
-* El SVM ens dóna una predicció amb una precisió del 83.16%
+* El SVM ens dóna una predicció amb una precisió del 83.16%.
 
-* Utilitzant la regressió logística obtenim una precisió del 83.84%.
-
-* Finalment, responent a la pregunta inicial "quin tipus de persones tenien més probabilitats de sobreviure?", respondriem que bàsicament els passatgers amb més possiblitats de sobreviure són les dones, gent amb titols nobiliaris i/o famílies nombreses.
-
-# 8. Conclusions
+# Conclusions
 
 Com ja s'ha pogut veure al llarg d'aquest informe, hem utilitzat moltes tècniques diferents per tal d'aconseguir netejar, preprocessar i analitzar les dades del dataset escollit. Entre altres coses hem consolidat conceptes relatius al tractament de valors nuls i extrems, discretització de variables, aplicació de testos per avaluar la normalitat i homoscedasticitat d'una variable, aplicació de testos per a testejar hipotesis, generació i avaluació de models predictius, generació de gràfics d'interés, etc. 
 
-Finalment ens agradaria comentar, una de les coses que ens ha cridat més l'atenció ha estat veure com la creació d'una variable particular (title) ha aportat als models predictius creats tanta informació i ens ha recordat com el preprocessat és de les etapes més importants a l'hora d'estudiar les dades. Al llarg d'aquesta pràctica hem consolidat diversos conceptes vistos al llarg de l'assignatura i hem après noves tècniques d'anàlisi i exploració de les dades, motiu pel qual considerem que ha estat molt productiva.
+També ens agradaria comentar que una de les coses que ens ha cridat més l'atenció ha estat veure com la creació d'una variable particular (title) ha aportat als models predictius creats tanta informació i ens ha recordat com el preprocessat és de les etapes més importants a l'hora d'estudiar les dades. Al llarg d'aquesta pràctica hem consolidat diversos conceptes vistos al llarg de l'assignatura i hem après noves tècniques d'anàlisi i exploració de les dades, motiu pel qual considerem que ha estat molt productiva.
+
+Finalment, responent a la pregunta inicial "quin tipus de persones tenien més probabilitats de sobreviure?", respondriem que bàsicament els passatgers amb més possiblitats de sobreviure són les dones, gent amb titols nobiliaris i/o famílies nombreses.
 
 \newpage
 
@@ -1372,7 +1370,7 @@ table_contributions
 knitr::kable(table_contributions, align = 'c', caption = "Tots els membres han contribuït de manera igualitaria en l'elaboració de la pràctica.")
 ```
 
-# 8. Bibliografia
+# Bibliografia
 
 - Calvo, M., Pérez, D., Subirats, L. (2019). Introducció a la neteja i anàlisi de les dades. Editorial UOC.
 
