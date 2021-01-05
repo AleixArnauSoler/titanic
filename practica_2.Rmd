@@ -24,17 +24,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, include=FALSE}
 #Càrrega de llibreries
-library(readr)
-library(stringr)
+
+library("readr")
+library("stringr")
 library(kableExtra)
 library(tibble)
 library(dplyr)
 library(ggplot2)
 library(plyr)
 library(ggpubr)
-library(VIM)
-library(e1071)
-library(gmodels)
 ```
 
 \newpage
@@ -71,13 +69,13 @@ Cada passatger conté informació de les següents variables:
 table<-matrix(c("PassangerID","Survived","Pclass","Name","Sex","Age","SibSp","Parch","Ticket","Fare","Cabin","Embarked","Número identificador del passatger","Enter que indica si el passatger va sobreviure l'enfonsament o no","Enter que indica el tipus de tiquet del passatger","Títol/Nom del passatger","Sexe del passatger","Edat del passatger (anys)","Número de cònjuges i germans del passatger a bord","Número de pares i fills del passatger a bord","Número del tiquet del passatger","Preu pagat/Tarifa del viatge","Número de cabina","Port en el que ha embarcat el passatger","","0 = No, 1 = Sí","1 = 1a classe, 2 = 2a classe, 3 = 3a classe","","","","","","","","","C = Cherbourg, Q = Queenstown, S = Southampton"),ncol=3)
 colnames(table)<-c("Variables","Definició","Codificació")
 rownames(table)<-c("","","","","","","","","","","","")
-table_contributions<-as.table(table)
-table_contributions
+table_variables<-as.table(table)
+table_variables
 ```
 
 \newpage
 ```{r ,echo=FALSE}
-knitr::kable(table_contributions, caption = "Data diccionary: resum de les variables del dataset 'Titanic: Machine Learning from Disaster'.")%>% 
+knitr::kable(table_variables, caption = "Data diccionary: resum de les variables del dataset 'Titanic: Machine Learning from Disaster'.")%>% 
   kable_styling(latex_options="scale_down")
 ```
 
@@ -288,7 +286,6 @@ nrow(dataset.femaleC3Parch1)
 ```
 
 Comprovem si cadascun dels grups mostre distribucions d'edat amb mitjanes diferents.
-
 ```{r}
 
 #maleC1Parch0
@@ -455,7 +452,7 @@ dataset.femaleC3Parch1$Age<-impute_age(dataset.femaleC3Parch1$Age)
 dataset_imputed<-rbind(dataset.maleC1Parch0,dataset.maleC1Parch1,dataset.maleC2Parch0,dataset.maleC2Parch1,dataset.maleC3Parch0,dataset.maleC3Parch1,dataset.femaleC1Parch0,dataset.femaleC1Parch1,dataset.femaleC2Parch0,dataset.femaleC2Parch1,dataset.femaleC3Parch0,dataset.femaleC3Parch1)
 
 dataset_imputed<-dataset_imputed[,c('PassengerId','Age')]
-names(dataset_imputed[2])<-'Age_imp'
+names(dataset_imputed)[2]<-'Age_imp'
 
 dataset<-merge(dataset,dataset_imputed,by = 'PassengerId')
 ```
@@ -483,7 +480,6 @@ table(dataset$title)
 ### 3.2.2. Creació variable 'Zona'
 
 De la variable 'cabin' extreiem la lletra que segurament representa la zona del vaixell on es troba la cabina.
-
 ```{r}
 Zona <- dataset %>%
   select(Cabin) %>%
@@ -492,10 +488,9 @@ Zona <- dataset %>%
 dataset$Zona<-Zona$Zona
 ```
 
-### 3.2.3. Creació variable 'Familiy_Size'
+### 3.2.3. Creació variable 'Familiy_Size' i 'FamilyCat'
 
 El tamany de les families es pot inferir a partir de les variables 'SibSp' i 'Parch'. A més, tota aquella gent que comparteixi cognom és probable que formin part de la mateixa familia.
-
 Dataset d'entrenament:
 
 ```{r}
@@ -519,14 +514,15 @@ dataset %>%
 
 ```
 
-Categorizem el tamany de les families segons si el passatger va sol, en familia/grup gran o petit:
+Categorizem el tamany de les families segons si el passatger va sol, en familia/grup gran o petit
 
 ```{r}
 
 dataset <- dataset %>%
   mutate(FamilyCat = factor(case_when(Family_size == 1 ~ 'sol'
                             ,Family_size > 1 & Family_size < 5 ~ 'petita'
-                            ,Family_size >= 5 ~ 'gran')))
+                            ,Family_size >= 5 & Family_size < 7 ~ 'moderada'
+                            ,Family_size >= 7 ~ 'gran')))
 
 
 ```
@@ -536,29 +532,29 @@ dataset <- dataset %>%
 ```{r}
 
 dataset$Price_Per_Person<-dataset$Fare/dataset$Family_size
-
-
 ```
  
-Podem visualitzar com ara el preu pagat per ticket per a cada passatger, es mou dins d'un rang logic segons la classe en la que viatjaven: 1a classe = >20 dolars, 2a class = 10-20 dollars, 3a classe = < 10 dolars.
-
+Podem visualitzar com ara el preu pagat per ticket per a cada passatger, es mou dins d'un rang logic segons la classe en la que viatjaven: 1a classe = >18 dolars, 2a class = 9-18 dollars, 3a classe = < 9 dolars.
 ```{r}
 # Use semi-transparent fill
 p_fare<-ggplot(dataset[which(dataset$Fare<100),], aes(x=Fare, fill=Pclass)) +
   geom_density(alpha=0.4)
 p_fare
+
 ```
 
 ```{r}
 # Use semi-transparent fill
 p_priceperson<-ggplot(dataset[which(dataset$Price_Per_Person<100),], aes(x=Price_Per_Person, fill=Pclass)) +
-  geom_density(alpha=0.4)
+  geom_density(alpha=0.4)+ geom_vline(xintercept = 9, linetype="dashed", 
+                color = "red", size=0.5) +
+  geom_density(alpha=0.4)+ geom_vline(xintercept = 18, linetype="dashed", 
+                color = "red", size=0.5)
 p_priceperson
 
 ```
 
-Finalment, podem tornar a comprobar que només tenim valors mencants a la variable 'Cabin'
-
+Finalment, podem tornar a comprobar que només tenim valors mencants a la variable 'Cabin', 'Zona' que és equivalent, i 'Age', de la qual hem creat una variable nova 'Age_imp' sense valors mencants.
 ```{r}
 has_na(dataset)
 table(dataset$Embarked,useNA='always')
@@ -568,41 +564,34 @@ table(dataset$Embarked,useNA='always')
 
 Categorizem l'edat dels passatgers en intervals de 5 anys amb l'objectiu de poder utilitzar aquesta variable a l'hora d'aplicar mètodes que utilitzen atributs categòrics en l'etapa d'anàlisi.
 
-Observem quin és el rang de valors que pren la variable *Age.y* transformada prèviament:
+Observem quin és el rang de valors que pren la variable *Age*:
 
 ```{r}
-str(dataset$Age.y)
+summary(dataset$Age_imp)
 ```
 
 ```{r}
-dataset["AgeCat"] <- cut(dataset$Age.y, breaks = c(0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85), labels = c("0-5","5-10","10-15","15-20","20-25","25-30","30-35","35-40","40-45","45-50","50-55","55-60","60-65","65-70","70-75","75-80","80-85"))
+dataset["AgeCat"] <- cut(dataset$Age_imp, breaks = c(0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85), labels = c("0-5","5-10","10-15","15-20","20-25","25-30","30-35","35-40","40-45","45-50","50-55","55-60","60-65","65-70","70-75","75-80","80-85"))
 ```
 
 
-## 3.3. Exploració i transformació de variables
+### 3.2.6. Creació variable 'PriceCat'
 
-```{r}
-
-
-
-
-```
+Com hem vist abans, la distribució del preu per persona (Price_Per_Person) segons classe en la que viatgen els passatgers sembla indicar que tenim un preu de referencia del tiquet segons la classe en la que es viatges. Així doncs, hem decidit discretitzar la variable Price_Per_Person en tres grups: preu baix, mig i alt.  
 
 
 ```{r}
+summary(dataset$Price_Per_Person)
 
-
-
-
+dataset["PriceCat"] <- cut(dataset$Price_Per_Person, breaks = c(-1,9,18,513), labels = c("baix","mig","alt"))
 ```
 
 
+## 3.3. Gestió de valors extrems (outliers)
 
+Els outliers són valors extrems que es trobem molt lluny de la distribució normal o esperada d’un atribut. De forma formal es solen definir com aquells valors que es troben a més de 3 desviacions estàndards de la mitjana, tot i que altres consideren definicions més estrictes com més enllà de 6 desviacions estàndards de la mitjana. Aquests poden incrementar l’error en la variància i conseqüentment reduir el poder estadístic d’un test alhora de fer estimacions significatives, o que aquestes estimacions estiguin esbiaixades. A més, la presència d’aquests pot afectar dràsticament a la mitjana. 
 
-
-## 3.4. Gestió de valors extrems (outliers)
-
-També cal observar els valors extrems de les variables numèriques i considerar si es corresponen a valors errònis que cal evitar o bé són casos extrems que convé mantenir. Com hem vist enteriorment, tenim 4 variables a considerar: Age, SibSp, Parch i Fare.
+Així doncs, cal observar els valors extrems de les variables numèriques i considerar si es corresponen a valors errònis que cal evitar o bé són casos extrems que convé mantenir. 
 
 Per començar l'anàlisi de valors atípics hem creat una funció que mostra els diagrames de caixa de les diferents variables numèriques:
 
@@ -633,19 +622,40 @@ deteccio_valors_atipics <- function(dades,variables_numeriques) {
 Un cop creades les funcions, les cridem passant-los hi les dades de cada fitxer i un vector amb el nom de les variables numèriques que contenen:
 
 ```{r}
-mostrar_diag_caixa(train_raw,c("Age","SibSp","Parch","Fare"))
+mostrar_diag_caixa(dataset,c("Age_imp","SibSp","Parch","Price_Per_Person","Family_size"))
 ```
 
+Com hem vist enteriorment, tenim varies variables a considerar: Age_imp (omitim Age), SibSp, Parch, Family_size i Price_Per_Person (ommitim Fare).
+Tot i que tenim varis valors que s'allunyen considerablement de la mitjana de la distribució d'aquestes variables, considerem que els valors extrems observats són llògics i esperables ja que es moun dins d'un rang de valors que esperariem, tant pel que fa a les edats, o al número de familiars a bord o tamany de familia. L'única variable que ens faria dubtar és el preu pagat per tiquet, tot i que ens falta informació per a saber si aquests preus extrems serien possible (e.g. tiquet a 1a classe comprat a última hora en la millor cabina). Tot i així, com que treballarem amb la variable PriceCat, i tots aquests valors queden categoritzats dins de la categoria de preu 'alt', no és rellevant i per tant no eliminem cap d'aquests valors extrems.
+
+Així doncs considerem que no hi ha outliers a eliminar en les nostres dades finals.
+
 ```{r}
-deteccio_valors_atipics(train_raw,c("Age","SibSp","Fare"))
+deteccio_valors_atipics(dataset,c("Age_imp","SibSp","Parch","Price_Per_Person","Family_size"))
 ```
 
 ### 3.4. Datasets final
 
+Primer de tot reduim la dimensionalitat del nostre dataset actual per a només treballar amb les variables que ens interessa analitzar. Incorporem també les dades de supervivencia en aquells passatgers pels quals coneixem si van sobreviure o no. I guardarem el fitxer com a 'dataset_titanic_clean.csv', el qual conté les dades netes que utilitzarem més endavant per als analizis.
 ```{r}
-# El dataset final
-dataset_final<-merge(dataset,train_predictions,by = "PassengerId", all = T)
+dataset_net<-dataset[,c("PassengerId","Pclass","Sex","Zona","FamilyCat","Price_Per_Person","PriceCat","Age_imp","title")]
 
+# El dataset final
+dataset_final<-merge(dataset_net,train_predictions,by = "PassengerId", all = T)
+
+# Convertim la variable 'Survived' en categorica
+dataset_final$Survived<-factor(dataset_final$Survived)
+
+write.csv(dataset_final,"dataset_titanic_clean.csv")
+```
+
+Podem observar com el dataset final conté 6 variables categoriques i 2 variables numériques (a banda de l'identificador del passatger i si la informació de si va sobreviure o no)
+```{r}
+glimpse(dataset_final)
+```
+
+Tornem a crear els datasets d'entrenament i test inicials utilitzant les dades actuals ja netejades i processades.
+```{r}
 # El dataset final d'entrenament
 dataset_train<-dataset_final[which(!(is.na(dataset_final$Survived))),]
 dim(dataset_train)
@@ -654,6 +664,158 @@ dim(dataset_train)
 dataset_test<-dataset_final[which(is.na(dataset_final$Survived)),]
 dim(dataset_test)
 ```
+
+\newpage
+
+
+
+## 4. Exploració i anàlisis de variables
+
+Primer de tot seleccionem tots els grups de cada variable que ens interessa analitzar. Llavors en comprobarem la normalitat i homogeneïtat de la variància de cadascun d'ells.
+
+```{r}
+# Grups seleccion segons classe (Pclass)
+table(dataset_final$Pclass,useNA='always')
+dataset_final.Class1<-dataset_final[which(dataset_final$Pclass=='1'),]
+dataset_final.Class2<-dataset_final[which(dataset_final$Pclass=='2'),]
+dataset_final.Class3<-dataset_final[which(dataset_final$Pclass=='3'),]
+
+# Grups seleccion segons sexe
+table(dataset_final$Sex,useNA='always')
+dataset_final.Male<-dataset_final[which(dataset_final$Sex=='male'),]
+dataset_final.Female<-dataset_final[which(dataset_final$Sex=='female'),]
+
+# Grups seleccion segons Zona
+table(dataset_final$Zona,useNA='always')
+dataset_final.ZA<-dataset_final[which(dataset_final$Zona=='A'),]
+dataset_final.ZB<-dataset_final[which(dataset_final$Zona=='B'),]
+dataset_final.ZC<-dataset_final[which(dataset_final$Zona=='C'),]
+dataset_final.ZD<-dataset_final[which(dataset_final$Zona=='D'),]
+dataset_final.ZE<-dataset_final[which(dataset_final$Zona=='E'),]
+dataset_final.ZF<-dataset_final[which(dataset_final$Zona=='F'),]
+dataset_final.ZG<-dataset_final[which(dataset_final$Zona=='G'),]
+dataset_final.ZT<-dataset_final[which(dataset_final$Zona=='T'),]
+
+# Grups seleccion segons Tamany familia (FamiliyCat)
+table(dataset_final$FamilyCat,useNA='always')
+dataset_final.sol<-dataset_final[which(dataset_final$FamilyCat=='sol'),]
+dataset_final.petita<-dataset_final[which(dataset_final$FamilyCat=='petita'),]
+dataset_final.moderada<-dataset_final[which(dataset_final$FamilyCat=='moderada'),]
+dataset_final.gran<-dataset_final[which(dataset_final$FamilyCat=='gran'),]
+
+# Grups seleccion segons preu pagat (PriceCat)
+table(dataset_final$PriceCat,useNA='always')
+dataset_final.baix<-dataset_final[which(dataset_final$PriceCat=='baix'),]
+dataset_final.mig<-dataset_final[which(dataset_final$PriceCat=='mig'),]
+dataset_final.alt<-dataset_final[which(dataset_final$PriceCat=='alt'),]
+
+# Grups seleccion segons títol
+table(dataset_final$title,useNA='always')
+dataset_final.Master<-dataset_final[which(dataset_final$title=='Master'),]
+dataset_final.Miss<-dataset_final[which(dataset_final$title=='Miss'),]
+dataset_final.Mr<-dataset_final[which(dataset_final$title=='Mr'),]
+dataset_final.Mrs<-dataset_final[which(dataset_final$title=='Mrs'),]
+dataset_final.Noble<-dataset_final[which(dataset_final$title=='noble'),]
+
+# Grups seleccion segons supervivencia
+table(dataset_final$Survived,useNA='always')
+dataset_final.Viu<-dataset_final[which(dataset_final$Survived=='0'),]
+dataset_final.Mor<-dataset_final[which(dataset_final$Survived=='1'),]
+
+```
+
+## 4.1. Comprobació de la normalitat variables quantitatives
+
+Per a comprobar que les variables quantitatives que tenim segueixen una distribució normal utilitzarem el test de Shapiro-Wilk
+```{r}
+# Price
+shapiro.Price<-shapiro.test(dataset_final$Price_Per_Person)
+# Age
+shapiro.Age_imp<-shapiro.test(dataset_final$Age_imp)
+
+# Price Supervivents
+shapiro.Su.Price<-shapiro.test(dataset_final.Viu$Price_Per_Person)
+
+# Price morts
+shapiro.Mo.Price<-shapiro.test(dataset_final.Mor$Price_Per_Person)
+
+# Age Supervivents
+shapiro.Su.Age_imp<-shapiro.test(dataset_final.Viu$Age_imp)
+
+# Age Morts
+shapiro.Mo.Age_imp<-shapiro.test(dataset_final.Mor$Age_imp)
+
+```
+
+## 4.1.1. Resultats
+
+
+```{r}
+table_res<-matrix(c(round(mean(dataset_final$Price_Per_Person),2),
+         round(mean(dataset_final$Age_imp),2),
+         round(mean(dataset_final.Viu$Price_Per_Person),2),
+         round(mean(dataset_final.Mor$Price_Per_Person),2),
+         round(mean(dataset_final.Viu$Age_imp),2),
+         round(mean(dataset_final.Mor$Age_imp),2),
+         round(median(dataset_final$Price_Per_Person),2),
+         round(median(dataset_final$Age_imp),2),
+         round(median(dataset_final.Viu$Price_Per_Person),2),
+         round(median(dataset_final.Mor$Price_Per_Person),2),
+         round(median(dataset_final.Viu$Age_imp),2),
+         round(median(dataset_final.Mor$Age_imp),2),
+         round(sd(dataset_final$Price_Per_Person),2),
+         round(sd(dataset_final$Age_imp),2),
+         round(sd(dataset_final.Viu$Price_Per_Person),2),
+         round(sd(dataset_final.Mor$Price_Per_Person),2),
+         round(sd(dataset_final.Viu$Age_imp),2),
+         round(sd(dataset_final.Mor$Age_imp),2),
+         shapiro.Price[2],
+         shapiro.Age_imp[2],
+         shapiro.Su.Price[2],
+         shapiro.Mo.Price[2],
+         shapiro.Su.Price[2],
+         shapiro.Mo.Price[2]),ncol=4)
+
+
+colnames(table_res)<-c("Mean","Median","sd","Shapiro-Wilk (p)")
+rownames(table_res)<-c("Price","Age","Price Supervivents","Price Morts","Age Supervivents","Age Morts")
+table_res<-as.table(table_res)
+
+
+```
+
+```{r ,echo=FALSE}
+knitr::kable(table_res, caption = "Resultats de les distribucions de les variables contínues'.")%>% 
+  kable_styling(latex_options="scale_down")
+```
+```{r}
+# Use semi-transparent fill
+p_survived<-ggplot(dataset_final, aes(x=Price_Per_Person, fill=Survived)) +
+  geom_density(alpha=0.4)+ geom_vline(xintercept = 9, linetype="dashed", 
+                color = "red", size=0.5) +
+  geom_density(alpha=0.4)+ geom_vline(xintercept = 18, linetype="dashed", 
+                color = "red", size=0.5)
+p_priceperson
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 \newpage
 
@@ -746,11 +908,9 @@ Veiem que només la variable AgeCat té valors nul, els suprimim utilitzant la f
 # Obtenim els indexs amb valors nul
 iwn_train <- indices_with_na(train_x)
 iwn_test <- indices_with_na(test_x)
-
 # Eliminem les files de les variables descriptives
 train_x_no_na <- train_x[-iwn_train,]
 test_x_no_na <- test_x[-iwn_test,]
-
 # Eliminem els valors de les variables corresponents a la classe
 train_y_no_na <- as.factor(train_y[-iwn_train])
 test_y_no_na <- as.factor(test_y[-iwn_test])
@@ -927,4 +1087,3 @@ ggplot(missing_fare_subset, aes(x = Fare)) +
 Mètodes de predicció
 Arbres de decisió
 Mètodes d'agregació
-
