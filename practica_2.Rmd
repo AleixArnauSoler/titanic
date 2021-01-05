@@ -16,6 +16,9 @@ output:
   word_document: default
 header-includes:
    - \usepackage[justification=raggedright,labelfont=bf,singlelinecheck=false]{caption}
+   - \usepackage[spanish]{babel}
+   - \usepackage{caption}
+   - \captionsetup[table]{name=Taula}
 ---
 
 ```{r setup, include=FALSE}
@@ -244,7 +247,6 @@ dataset$Embarked<-droplevels(dataset$Embarked)
 ```
 
 En quan a la variable 'Fare', assumirem que aquest té el mateix valor mig que el que altres passatgers de viatjant en circumstancies similars van pagar.
-
 ```{r}
 # Aquests es troba en el passatger número 1044
 dataset[which(is.na(dataset$Fare)),]
@@ -252,6 +254,7 @@ dataset[which(is.na(dataset$Fare)),]
 dataset[1044,]$Fare<-mean(dataset[which(dataset$Pclass==3&dataset$SibSp==0&dataset$Parch==0),]$Fare,na.rm = T)
 
 dataset[1044,]$Fare
+
 ```
 
 La variable 'Cabin' conté molts valors mencants, per a tant els tractarem com a mencants i no intentarem imputar els que falten.
@@ -290,7 +293,6 @@ nrow(dataset.femaleC3Parch1)
 ```
 
 Comprovem si cadascun dels grups mostre distribucions d'edat amb mitjanes diferents.
-
 ```{r}
 
 #maleC1Parch0
@@ -490,7 +492,16 @@ Zona <- dataset %>%
   select(Cabin) %>%
   mutate(Zona = factor(str_extract(Cabin, pattern = "^.")))
 
-dataset$Zona<-Zona$Zona
+dataset$Zona<-as.character(Zona$Zona)
+
+for (i in 1:length(dataset$Zona)){
+  if(is.na(dataset[i,]$Zona)){
+    dataset[i,]$Zona<-'Desconeguda'
+  }
+}
+
+dataset$Zona<-factor(dataset$Zona)
+
 ```
 
 ### 3.2.3. Creació variable 'Familiy_Size' i 'FamilyCat'
@@ -737,7 +748,6 @@ dataset_final.Mor<-dataset_final[which(dataset_final$Survived=='1'),]
 ## 4.1. Comprobació de la normalitat variables quantitatives
 
 Per a comprobar que les variables quantitatives que tenim segueixen una distribució normal utilitzarem el test de Shapiro-Wilk
-
 ```{r}
 # Price
 shapiro.Price<-shapiro.test(dataset_final$Price_Per_Person)
@@ -755,63 +765,317 @@ shapiro.Su.Age_imp<-shapiro.test(dataset_final.Viu$Age_imp)
 
 # Age Morts
 shapiro.Mo.Age_imp<-shapiro.test(dataset_final.Mor$Age_imp)
+
+# Price class1
+shapiro.C1.Price<-shapiro.test(dataset_final.Class1$Price_Per_Person)
+
+# Price class2
+shapiro.C2.Price<-shapiro.test(dataset_final.Class2$Price_Per_Person)
+
+# Price class3
+shapiro.C3.Price<-shapiro.test(dataset_final.Class3$Price_Per_Person)
+
 ```
 
-## 4.1.1. Resultats
+### 4.1.1. Resultats
 
 ```{r}
 table_res<-matrix(c(round(mean(dataset_final$Price_Per_Person),2),
          round(mean(dataset_final$Age_imp),2),
          round(mean(dataset_final.Viu$Price_Per_Person),2),
          round(mean(dataset_final.Mor$Price_Per_Person),2),
+         round(mean(dataset_final.Class1$Price_Per_Person),2),
+         round(mean(dataset_final.Class2$Price_Per_Person),2),
+         round(mean(dataset_final.Class3$Price_Per_Person),2),
          round(mean(dataset_final.Viu$Age_imp),2),
          round(mean(dataset_final.Mor$Age_imp),2),
          round(median(dataset_final$Price_Per_Person),2),
          round(median(dataset_final$Age_imp),2),
          round(median(dataset_final.Viu$Price_Per_Person),2),
          round(median(dataset_final.Mor$Price_Per_Person),2),
+         round(median(dataset_final.Class1$Price_Per_Person),2),
+         round(median(dataset_final.Class2$Price_Per_Person),2),
+         round(median(dataset_final.Class3$Price_Per_Person),2),
          round(median(dataset_final.Viu$Age_imp),2),
          round(median(dataset_final.Mor$Age_imp),2),
          round(sd(dataset_final$Price_Per_Person),2),
          round(sd(dataset_final$Age_imp),2),
          round(sd(dataset_final.Viu$Price_Per_Person),2),
          round(sd(dataset_final.Mor$Price_Per_Person),2),
+         round(sd(dataset_final.Class1$Price_Per_Person),2),
+         round(sd(dataset_final.Class2$Price_Per_Person),2),
+         round(sd(dataset_final.Class3$Price_Per_Person),2),
          round(sd(dataset_final.Viu$Age_imp),2),
          round(sd(dataset_final.Mor$Age_imp),2),
          shapiro.Price[2],
          shapiro.Age_imp[2],
          shapiro.Su.Price[2],
          shapiro.Mo.Price[2],
-         shapiro.Su.Price[2],
-         shapiro.Mo.Price[2]),ncol=4)
+         shapiro.C1.Price[2],
+         shapiro.C2.Price[2],
+         shapiro.C3.Price[2],
+         shapiro.Su.Age_imp[2],
+         shapiro.Mo.Age_imp[2]),ncol=4)
 
 
 colnames(table_res)<-c("Mean","Median","sd","Shapiro-Wilk (p)")
-rownames(table_res)<-c("Price","Age","Price Supervivents","Price Morts","Age Supervivents","Age Morts")
-table_res <- as.table(table_res)
+rownames(table_res)<-c("Price","Age","Price Supervivents","Price Morts","Price Class 1", "Price Class 2", "Price Class 3", "Age Supervivents","Age Morts")
+table_res<-as.table(table_res)
+
+
 ```
 
 ```{r ,echo=FALSE}
-knitr::kable(table_res, caption = "Resultats de les distribucions de les variables contínues'.") %>% 
+knitr::kable(table_res, caption = "Resultats de les distribucions de les variables contínues'.")%>% 
   kable_styling(latex_options="scale_down")
+```
+Podem observar com cap de les variables continues analitzades (Age i Price) segueix una distribució normal en cap dels grups testats. El p-value del test de Shapiro-Wilk és < 0.5 en tots els casos. Per tant, en tots els casos és rebutja la hipòtesis nul·la que considera que la distribució és normal.
+
+Comprobem si la variable edat segueix una distribució normal en algun dels grups creats anteriorment.
+```{r}
+shapiro.C1.Age_imp<-shapiro.test(dataset_final.Class1$Age_imp)
+shapiro.C2.Age_imp<-shapiro.test(dataset_final.Class2$Age_imp)
+shapiro.C3.Age_imp<-shapiro.test(dataset_final.Class3$Age_imp)
+shapiro.Male.Age_imp<-shapiro.test(dataset_final.Male$Age_imp)
+shapiro.Female.Age_imp<-shapiro.test(dataset_final.Female$Age_imp)
+shapiro.ZA.Age_imp<-shapiro.test(dataset_final.ZA$Age_imp)
+shapiro.ZB.Age_imp<-shapiro.test(dataset_final.ZB$Age_imp)
+shapiro.ZC.Age_imp<-shapiro.test(dataset_final.ZC$Age_imp)
+shapiro.ZD.Age_imp<-shapiro.test(dataset_final.ZD$Age_imp)
+shapiro.ZE.Age_imp<-shapiro.test(dataset_final.ZE$Age_imp)
+shapiro.ZF.Age_imp<-shapiro.test(dataset_final.ZF$Age_imp)
+shapiro.ZG.Age_imp<-shapiro.test(dataset_final.ZG$Age_imp)
+shapiro.sol.Age_imp<-shapiro.test(dataset_final.sol$Age_imp)
+shapiro.petita.Age_imp<-shapiro.test(dataset_final.petita$Age_imp)
+shapiro.moderada.Age_imp<-shapiro.test(dataset_final.moderada$Age_imp)
+shapiro.gran.Age_imp<-shapiro.test(dataset_final.gran$Age_imp)
+shapiro.baix.Age_imp<-shapiro.test(dataset_final.baix$Age_imp)
+shapiro.mig.Age_imp<-shapiro.test(dataset_final.mig$Age_imp)
+shapiro.alt.Age_imp<-shapiro.test(dataset_final.alt$Age_imp)
+shapiro.Master.Age_imp<-shapiro.test(dataset_final.Master$Age_imp)
+shapiro.Miss.Age_imp<-shapiro.test(dataset_final.Miss$Age_imp)
+shapiro.Mr.Age_imp<-shapiro.test(dataset_final.Mr$Age_imp)
+shapiro.Mrs.Age_imp<-shapiro.test(dataset_final.Mrs$Age_imp)
+shapiro.Noble.Age_imp<-shapiro.test(dataset_final.Noble$Age_imp)
+
 ```
 
 ```{r}
+table_res2<-matrix(c(
+  shapiro.C1.Age_imp[2],
+  shapiro.C2.Age_imp[2],
+  shapiro.C3.Age_imp[2],
+  shapiro.Male.Age_imp[2],
+  shapiro.Female.Age_imp[2],
+  shapiro.ZA.Age_imp[2],
+  shapiro.ZB.Age_imp[2],
+  shapiro.ZC.Age_imp[2],
+  shapiro.ZD.Age_imp[2],
+  shapiro.ZE.Age_imp[2],
+  shapiro.ZF.Age_imp[2],
+  shapiro.ZG.Age_imp[2],
+  shapiro.sol.Age_imp[2],
+  shapiro.petita.Age_imp[2],
+  shapiro.moderada.Age_imp[2],
+  shapiro.gran.Age_imp[2],
+  shapiro.baix.Age_imp[2],
+  shapiro.mig.Age_imp[2],
+  shapiro.alt.Age_imp[2],
+  shapiro.Master.Age_imp[2],
+  shapiro.Miss.Age_imp[2],
+  shapiro.Mr.Age_imp[2],
+  shapiro.Mrs.Age_imp[2],
+  shapiro.Noble.Age_imp[2]),ncol=1)
+
+
+colnames(table_res2)<-c("Shapiro-Wilk (p)")
+rownames(table_res2)<-c("Classe 1","Classe 2","Classe 3","Homes","Dones", "Zona A", "Zona B", "Zona C", "Zona D", "Zona E", "Zona F", "Zona G", "Sol", "Familia petita","Familia moderada", "Familia gran", "Preu tiquet baix", "Preu tiquet mig", "Preu tiquet alt", "Master", "Miss", "Mr", "Mrs", "Nobles")
+table_res2<-as.table(table_res2)
+
+
+```
+
+```{r ,echo=FALSE}
+knitr::kable(table_res2, caption = "Test de normalitat en la distribució de l'edat en cadascun dels grups analitzats'.")%>% 
+  kable_styling(latex_options="scale_down")
+```
+Podem observar com hi ha alguns grups on si que l'edat segeuix una distribució normal. Aquest és el cas per exemple dels passatgers de 1a classe, els que van pagar un preu alt per el tiquet (que és bastant equivalent a ser de 1a classe) i segons les zones de la cabina (amb l'excepció de la zona B).
+
+Podem comprobar alguna d'aquestes distribucions de forma visual. Ho farem amb els passatgers que viatgen en class 1.
+
+```{r}
 # Use semi-transparent fill
-p_survived<-ggplot(dataset_final, aes(x=Price_Per_Person, fill=Survived)) +
-  geom_density(alpha=0.4)+ geom_vline(xintercept = 9, linetype="dashed", 
-                color = "red", size=0.5) +
-  geom_density(alpha=0.4)+ geom_vline(xintercept = 18, linetype="dashed", 
+p_AgeClass1<-ggplot(dataset_final.Class1, aes(x=Age_imp)) +
+  geom_density(alpha=0.4)+ geom_vline(xintercept = mean(dataset_final.Class1$Age_imp), linetype="dashed", 
                 color = "red", size=0.5)
-p_priceperson
+
+
+p_AgeClass1
+```
+
+
+
+## 4.3. Comprovació de l'homoscedasticitat
+
+Per a comprobar l'homoscedasticitat (i.e. la homogeneitat de la variança) apliquem el test de Fligner-Killen (test no parametric) ja que com hem vist abans cap de les nostres variables continues segueix una distribució normal.
+
+Aplicarem aquest test per a comprobar si la variança en les variables edat i preu del tiquet són homogenies entre tots els grups de les variables categoriques
+```{r}
+# Comprovem per l'edat
+flin_Pclass<-fligner.test(Age_imp ~ Pclass, data = dataset_final)
+flin_Sex<-fligner.test(Age_imp ~ Sex, data = dataset_final)
+flin_Zona<-fligner.test(Age_imp ~ Zona, data = dataset_final)
+flin_FamilyCat<-fligner.test(Age_imp ~ FamilyCat, data = dataset_final)
+flin_PriceCat<-fligner.test(Age_imp ~ PriceCat, data = dataset_final)
+flin_title<-fligner.test(Age_imp ~ title, data = dataset_final)
+flin_Survived<-fligner.test(Age_imp ~ Survived, data = dataset_final)
+
+# Comprovem pel preu del tiquet
+flin_Pclass_Price<-fligner.test(Price_Per_Person ~ Pclass, data = dataset_final)
+flin_Sex_Price<-fligner.test(Price_Per_Person ~ Sex, data = dataset_final)
+flin_Zona_Price<-fligner.test(Price_Per_Person ~ Zona, data = dataset_final)
+flin_FamilyCat_Price<-fligner.test(Price_Per_Person ~ FamilyCat, data = dataset_final)
+flin_PriceCat_Price<-fligner.test(Price_Per_Person ~ PriceCat, data = dataset_final)
+flin_title_Price<-fligner.test(Price_Per_Person ~ title, data = dataset_final)
+flin_Survived_Price<-fligner.test(Price_Per_Person ~ Survived, data = dataset_final)
+```
+
+Creem la taula amb els resultats:
+
+```{r}
+
+table_res4<-matrix(c(
+  flin_Pclass$p.value,
+  flin_Sex$p.value,
+  flin_Zona$p.value,
+  flin_FamilyCat$p.value,
+  flin_PriceCat$p.value,
+  flin_title$p.value,
+  flin_Survived$p.value,
+  flin_Pclass_Price$p.value,
+  flin_Sex_Price$p.value,
+  flin_Zona_Price$p.value,
+  flin_FamilyCat_Price$p.value,
+  flin_PriceCat_Price$p.value,
+  flin_title_Price$p.value,
+  flin_Survived_Price$p.value),ncol=1)
+
+colnames(table_res4)<-c("Fligner-Killeen (p)")
+rownames(table_res4)<-c("Edat segons classe","Edat segons sexe","Edat segons zona", "Edat segons tamany de la familia", "Edat segons categoria de preu", "Edat segons titol", "Edat segons supervivencia","Preu segons classe","Preu segons sexe","Preu segons zona", "Preu segons tamany de la familia", "Preu segons categoria de preu", "Preu segons titol", "Preu segons supervivencia")
+table_res4<-as.table(table_res4)
+
+```
+
+```{r ,echo=FALSE}
+knitr::kable(table_res4, caption = "Test de Fligner-Killeen de homogeneitat de la variança: edat i preu del tiquet'.")%>% 
+  kable_styling(latex_options="scale_down")
+```
+
+Podem observar que tans sols la variança de l'edat a través de les diferentes zones és homogenia (acceptem la hipotesis de que les variances són homogenies ja que el p-valor > 0.5).
+La variança tant de l'edat com del preu del tiquet no és homogenia entre categories de la resta de variables.
+
+
+## 4.2. Distribucions de les variables entre passatgers supervivents i no supervivents
+```{r}
+# Variables continues
+p_price<-ggplot(dataset_final[which(!(is.na(dataset_final$Survived))),], aes(x=Price_Per_Person, fill=Survived)) +
+  geom_density(alpha=0.4)
+p_age<-ggplot(dataset_final[which(!(is.na(dataset_final$Survived))),], aes(x=Age_imp, fill=Survived)) +
+  geom_density(alpha=0.4)
+
+# Variables categoriques
+p_class<-ggplot(dataset_final[which(!(is.na(dataset_final$Survived))),])+geom_bar(aes(x=Pclass, fill=Survived))
+p_sex<-ggplot(dataset_final[which(!(is.na(dataset_final$Survived))),])+geom_bar(aes(x=Sex, fill=Survived))
+p_zona<-ggplot(dataset_final[which(!(is.na(dataset_final$Survived))),])+geom_bar(aes(x=Zona, fill=Survived))
+p_familyCat<-ggplot(dataset_final[which(!(is.na(dataset_final$Survived))),])+geom_bar(aes(x=FamilyCat, fill=Survived))
+p_priceCat<-ggplot(dataset_final[which(!(is.na(dataset_final$Survived))),])+geom_bar(aes(x=PriceCat, fill=Survived))
+p_title<-ggplot(dataset_final[which(!(is.na(dataset_final$Survived))),])+geom_bar(aes(x=title, fill=Survived))
+p_Embarked<-ggplot(dataset_final[which(!(is.na(dataset_final$Survived))),])+geom_bar(aes(x=Embarked, fill=Survived))
+p_AgeCat<-ggplot(dataset_final[which(!(is.na(dataset_final$Survived))),])+geom_bar(aes(x=AgeCat, fill=Survived))
+
+figure_Dis <- ggarrange(p_price,p_age,p_class,p_sex,p_zona,p_familyCat,p_priceCat,p_title,p_Embarked,p_AgeCat, ncol = 3, nrow = 4)
+
+figure_Dis
+```
+
+## 4.3. Comparació entre dos grups de dades (variables continues)
+
+Comprovem si hi ha diferencies significatives en la edat i el preu del bitllet entre la gent que va sobreviure i els que van morir.
+```{r}
+
+wilcox.test(Price_Per_Person ~ Survived, data = dataset_final[which(!(is.na(dataset_final$Survived))),])
+wilcox.test(Age_imp ~ Survived, data = dataset_final[which(!(is.na(dataset_final$Survived))),])
+```
+Podem observar que hi ha diferencies significatives entre el preu pagat per tiquet de la gent que va sobreviure (més alt) i la que va morir (més baix)
+En canvi, no s'aprecien diferencies significatives entre la edat de la gent que va sobreviure i la que va morir.
+
+## 4.4. Comparació entre dos grups de dades (variables categoriques)
+
+Mirem si hi ha diferencies entre les proporcions dels diferents grups de les variables categoriques entre la gent que va sobreviure i la que va morir.
+```{r}
+
+# Segons el sexe
+sup_sex<-t(table(dataset_final[which(!(is.na(dataset_final$Survived))),]$Sex,dataset_final[which(!(is.na(dataset_final$Survived))),]$Survived))
+sup_sex
+chisq.test(sup_sex)
+
+# Segons la zona
+sup_zona<-t(table(dataset_final[which(!(is.na(dataset_final$Survived))),]$Zona,dataset_final[which(!(is.na(dataset_final$Survived))),]$Survived))
+sup_zona
+chisq.test(sup_zona)
+
+# Segons el tamany de familia
+sup_FamilyCat<-t(table(dataset_final[which(!(is.na(dataset_final$Survived))),]$FamilyCat,dataset_final[which(!(is.na(dataset_final$Survived))),]$Survived))
+sup_FamilyCat
+chisq.test(sup_FamilyCat)
+
+# Segons el tamany del preu del bitllet
+sup_PriceCat<-t(table(dataset_final[which(!(is.na(dataset_final$Survived))),]$PriceCat,dataset_final[which(!(is.na(dataset_final$Survived))),]$Survived))
+sup_PriceCat
+chisq.test(sup_PriceCat)
+
+# Segons el titol que es tingui
+sup_title<-t(table(dataset_final[which(!(is.na(dataset_final$Survived))),]$title,dataset_final[which(!(is.na(dataset_final$Survived))),]$Survived))
+sup_title
+chisq.test(sup_title)
+
+# Segons on s'ha embarcat
+sup_Embarked<-t(table(dataset_final[which(!(is.na(dataset_final$Survived))),]$Embarked,dataset_final[which(!(is.na(dataset_final$Survived))),]$Survived))
+sup_Embarked
+chisq.test(sup_Embarked)
+
+# Segons la categoria d'edat
+sup_AgeCat<-t(table(dataset_final[which(!(is.na(dataset_final$Survived))),]$AgeCat,dataset_final[which(!(is.na(dataset_final$Survived))),]$Survived))
+sup_AgeCat
+chisq.test(sup_AgeCat)
+
+```
+Podem observar que hi ha diferencies significatives entre les diferents classes de totes les variables categoriques analitzades entre la gent que va sobreviure i la que va morir.
+
+
+## 4.6. Correlació entre variables
+Calculem la correlació entre les variables continues. Utilitzem el metode de "Spearman" ja que les dades no segueixen una distribució normal.
+```{r}
+dataset_final_cont<-dataset_final[,c("Price_Per_Person","Age_imp")]
+
+cor.test(dataset_final_cont$Price_Per_Person,dataset_final_cont$Age_imp, method = "spearman")
+
+```
+Podem observar com l'edat és correlaciona significativament amb el preu del bitllet pagat.
+
+```{r}
+corr.res<-cor(dataset_final_cont, method = 'spearman')
+
+# Si tinguessim més variables podriem crear un grafic amb el codi següent:
+#corrplot.mixed(corr.res,upper="circle",number.cex=.7,tl.cex=.8)
 
 ```
 
 \newpage
 
-# 4. Modelització
+# 5. Modelització
 
-## 4.1. Arbre de decisió
+## 5.1. Arbre de decisió
 
 ***
 
@@ -934,7 +1198,7 @@ Utilitzant el model basat en arbres de decisió hem obtingut una precisió de 82
 
 També hem pogut veure que la variable que té més pes a l'hora de determinar el destí dels passatgers del titanic és el sexe, el qual té un pes del 93.77% en el model creat. El títol nobiliari del passatger també guarda una forta relació amb el model, mantenint un 62.79%. Finalment trobem que la dimensió de la família i classe dels tiquets també tenen una influència considerable però menor respecte les dues anteriors comentades.
 
-## 4.2. Support Vector Machine
+## 5.2. Support Vector Machine
 
 ***
 
@@ -997,7 +1261,7 @@ print(paste("La precisió del model és de ", round(precisio_model_matriu_conf*1
 
 Utilitzant el model basat en SVM obtenim una precisió del 83.16%, lleugerament millor que el que s'ha obtingut utilitzant arbres de decisió.
 
-## 4.3. Regressió logística
+## 5.3. Regressió logística
 
 ***
 
@@ -1064,19 +1328,8 @@ print(paste("La precisió del model és de ", round(precisio_model_matriu_conf_g
 
 Utilitzant la regressió logística obtenim una precisió del 83.84%, lleugerament superior a la resta de modelitzacions provades. Observant el resum del model podem veure com les categòries que més influèixen en la decisió de la classe d'un passatger utilitzant aquesta modelització és quan el títol del passatger és noble o simplement Mr (ja que indica que no poseeix cap títol nobiliari i pertany al gènere masculí). També influeix que el passatger viatgi sol o amb poca companyia i el fet de si és o no ancià.
 
-# 5. Resultats finals
-
-```{r}
-
-```
-
-# 6. Conclusions
-
-```{r}
-
-```
-
-# 7. Predicció
+\newpage
+# 6. Predicció
 
 Arribats a aquest punt hem volgut presentar-hi els nostres resultats a la competició activa de la pàgina Kaggle. Per fer-ho hem predit els registres corresponents al fitxer de test (*test.csv*) utilitzant el model que ens ha donat millors resultats: el model basat en la regressió logística.
 
@@ -1106,7 +1359,30 @@ Finalment generem el fitxer csv que conté la predicció:
 write.csv(df_competition, "prediction_comp.csv", row.names=FALSE, quote=FALSE)
 ```
 
-# 7. Bibliografia
+\newpage
+# 7. Conclusions
+
+```{r}
+
+
+
+```
+
+\newpage
+
+```{r  include=FALSE}
+table<-matrix(c("Investigació prèvia","Redacció de les respostes","Desenvolupament codi","AAS & ATP","AAS & ATP","AAS & ATP"),ncol=2)
+colnames(table)<-c("Contribucions","Signa")
+rownames(table)<-c("","","")
+table_contributions<-as.table(table)
+table_contributions
+```
+
+```{r ,echo=FALSE}
+knitr::kable(table_contributions, align = 'c', caption = "Tots els membres han contribuït de manera igualitaria en l'elaboració de la pràctica.")
+```
+
+# 8. Bibliografia
 
 - Gibergans, J. (2019). Regressió lineal simple. Editorial UOC.
 
@@ -1116,42 +1392,3 @@ write.csv(df_competition, "prediction_comp.csv", row.names=FALSE, quote=FALSE)
 
 - Liviano, D., Pujol, M. (2019). Models de regressió i anàlisi multivariant amb R-Commander. Editorial UOC.
 
-
-Integrem les dades del dataset de test amb les dades de les seves corresponents prediccions de supervivencia si les dones, i només les dones, haguessin sobreviscut.
-
-```{r}
-names(test_class_raw)[2]<-"AllWomenSurvived"
-test_dataset<-merge(test_raw,test_class_raw,by = 'PassengerId')
-head(test_dataset)
-```
-
-
-
-.............................
-Compare the passenger Class with their position on the Deck
-table(cabin_deck$Deck, cabin_deck$Pclass)
-
-#Calculate the correlation of the 2 variables
-cabin_deck %>% select(Pclass, Deck) %>%
-  map_df(as.numeric) %>%
-  cor(., use = 'complete.obs',method = 'pearson')
-
-..............................
-
-..............................
-#plot the data  
-ggplot(missing_fare_subset, aes(x = Fare)) +
-  geom_density(fill = 'forestgreen') +
-  scale_x_continuous(label = dollar_format(), breaks = seq(0, 60, by = 10)) +
-  ggtitle("Density Distribution of Fares for 3rd Class Male Passengers Embarking from Southampton", subtitle = "n = 365")
-..............................  
-  
-  
-  
-
-
-
-
-Mètodes de predicció
-Arbres de decisió
-Mètodes d'agregació
