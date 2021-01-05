@@ -85,8 +85,11 @@ knitr::kable(table_variables, caption = "Data diccionary: resum de les variables
 ```
 
 Notes a tenir en compte:
+
 * La variable **pclass** ens serveix com a indicador indirecte del nivell socioeconomic del passatger (alt: 1a classe, mitjà: 2a classe, baix: 3a classe).
+
 * L'edat dels menors d'1 any està codificada com la fracció d'any que tenen. Les edats és mostren com a fraccions on en alguns casos s'indica' el 'i mig' (e.g. 35.50 = 35 anys i mig)
+
 * Alguns nens viatjaven amb una mainadera, per tant és possible que per algun d'ells 'parch' sigui 0.
 
 \newpage
@@ -101,10 +104,12 @@ test_raw <- read.csv("data/test.csv", sep=',', stringsAsFactors = FALSE)
 test_class_raw <- read.csv("data/gender_submission.csv", sep=',', stringsAsFactors = FALSE)
 ```
 
-Primer inspeccionem els datasets
+Primer inspeccionem els datasets:
+
 ```{r}
 head(train_raw)
 ```
+
 ```{r}
 head(test_raw)
 ```
@@ -157,7 +162,9 @@ Les dimensions són les esperades i el format és equivalent entre els dos datas
 head(train_raw)
 head(test_raw)
 ```
+
 Integrem les dades dels dos datasets en un de sol.
+
 ```{r}
 dataset<-rbind(train_raw,test_raw)
 head(dataset)
@@ -235,6 +242,7 @@ table(dataset$Embarked,useNA='always')
 # Aquests es troben en el passatger número 62 i 830
 dataset[which(dataset$Embarked==""),]
 ```
+
 Com que només es tracta de dos valors, i aquest passatgers viatjaven sols, assumirem que aquests passatgers van embarcar al mateix port que la majoria de passatgers ('S'). De donar-se el cas de que algun d'aquests viatgers no viatges sol, també podriem assumir que que el port d'embarcament era el mateix que els seus familiars. Aquest el podriem trobar mitjançant el cognom o nom de familia del passatger.
 
 ```{r}
@@ -247,14 +255,12 @@ dataset$Embarked<-droplevels(dataset$Embarked)
 ```
 
 En quan a la variable 'Fare', assumirem que aquest té el mateix valor mig que el que altres passatgers de viatjant en circumstancies similars van pagar.
+
 ```{r}
 # Aquests es troba en el passatger número 1044
 dataset[which(is.na(dataset$Fare)),]
-
 dataset[1044,]$Fare<-mean(dataset[which(dataset$Pclass==3&dataset$SibSp==0&dataset$Parch==0),]$Fare,na.rm = T)
-
 dataset[1044,]$Fare
-
 ```
 
 La variable 'Cabin' conté molts valors mencants, per a tant els tractarem com a mencants i no intentarem imputar els que falten.
@@ -262,7 +268,6 @@ La variable 'Cabin' conté molts valors mencants, per a tant els tractarem com a
 En quan a la variable 'Age' imputarem les edats mencants segons el grup al que pertanyi cadascun dels passatgers on aquestes dades manquen. Hem decidit que fariem servir les variables 'Sex', 'Pclass' i 'Parch' igual o diferent a 0 per a crear els grups dels quals imputar les edats mancants.
 
 ```{r}
-
 dataset.maleC1Parch0<-dataset[which(dataset$Sex=='male'&dataset$Pclass=='1'&dataset$Parch<1),]
 dataset.maleC1Parch1<-dataset[which(dataset$Sex=='male'&dataset$Pclass=='1'&dataset$Parch>=1),]
 dataset.maleC2Parch0<-dataset[which(dataset$Sex=='male'&dataset$Pclass=='2'&dataset$Parch<1),]
@@ -293,8 +298,8 @@ nrow(dataset.femaleC3Parch1)
 ```
 
 Comprovem si cadascun dels grups mostre distribucions d'edat amb mitjanes diferents.
-```{r}
 
+```{r}
 #maleC1Parch0
 age_mean1 <- mean(dataset.maleC1Parch0$Age, na.rm = T)
 age_median1 <- median(dataset.maleC1Parch0$Age, na.rm = T)
@@ -433,9 +438,7 @@ figure_Ages <- ggarrange(p_maleC1Parch0,p_maleC1Parch1,p_maleC2Parch0,p_maleC2Pa
 figure_Ages
 ```
 
-
 ```{r}
-
 impute_age <- function (x) {
     x[is.na(x)] <- median(x, na.rm = T)
     return(x)
@@ -469,8 +472,8 @@ dataset<-merge(dataset,dataset_imputed,by = 'PassengerId')
 ### 3.2.1. Creació variable 'Title'
 
 A partir del nom dels passatgers es poden extreure els titols d'algun d'ells. 
-```{r}
 
+```{r}
 # Extreiem el 'titol' de cada passatger. Com que el format dels nomes sempre es el mateix podem seguir una estructura per trobar-los
 dataset$title <- str_sub(dataset$Name, str_locate(dataset$Name, ",")[ , 1] + 2, str_locate(dataset$Name, "\\.")[ , 1] - 1)
 
@@ -481,12 +484,12 @@ dataset$title[dataset$title %in% names_noblesa] <- "noble"
 dataset$title<-factor(dataset$title)
 # Comprobem el resultat final
 table(dataset$title)
-
 ```
 
 ### 3.2.2. Creació variable 'Zona'
 
 De la variable 'cabin' extreiem la lletra que segurament representa la zona del vaixell on es troba la cabina.
+
 ```{r}
 Zona <- dataset %>%
   select(Cabin) %>%
@@ -501,7 +504,6 @@ for (i in 1:length(dataset$Zona)){
 }
 
 dataset$Zona<-factor(dataset$Zona)
-
 ```
 
 ### 3.2.3. Creació variable 'Familiy_Size' i 'FamilyCat'
@@ -527,20 +529,16 @@ dataset %>%
   select(Family_name, SibSp, Parch, Family_size) %>%
    arrange(Family_name)%>%
   head(10)
-
 ```
 
 Categorizem el tamany de les families segons si el passatger va sol, en familia/grup gran o petit
 
 ```{r}
-
 dataset <- dataset %>%
   mutate(FamilyCat = factor(case_when(Family_size == 1 ~ 'sol'
                             ,Family_size > 1 & Family_size < 5 ~ 'petita'
                             ,Family_size >= 5 & Family_size < 7 ~ 'moderada'
                             ,Family_size >= 7 ~ 'gran')))
-
-
 ```
 
 ### 3.2.4. Creació variable 'Price_Person'
@@ -550,12 +548,12 @@ dataset$Price_Per_Person<-dataset$Fare/dataset$Family_size
 ```
  
 Podem visualitzar com ara el preu pagat per ticket per a cada passatger, es mou dins d'un rang logic segons la classe en la que viatjaven: 1a classe = >18 dolars, 2a class = 9-18 dollars, 3a classe = < 9 dolars.
+
 ```{r}
 # Use semi-transparent fill
 p_fare<-ggplot(dataset[which(dataset$Fare<100),], aes(x=Fare, fill=Pclass)) +
   geom_density(alpha=0.4)
 p_fare
-
 ```
 
 ```{r}
@@ -566,7 +564,6 @@ p_priceperson<-ggplot(dataset[which(dataset$Price_Per_Person<100),], aes(x=Price
   geom_density(alpha=0.4)+ geom_vline(xintercept = 18, linetype="dashed", 
                 color = "red", size=0.5)
 p_priceperson
-
 ```
 
 Finalment, podem tornar a comprobar que només tenim valors mencants a la variable 'Cabin', 'Zona' que és equivalent, i 'Age', de la qual hem creat una variable nova 'Age_imp' sense valors mencants.
@@ -590,7 +587,6 @@ summary(dataset$Age_imp)
 dataset["AgeCat"] <- cut(dataset$Age_imp, breaks = c(-1,10,18,55,100), labels = c("nens","adolescents","adults","ancians"))
 
 table(dataset$AgeCat,useNA='always')
-
 ```
 
 
@@ -667,7 +663,7 @@ dataset_final<-merge(dataset_net,train_predictions,by = "PassengerId", all = T)
 # Convertim la variable 'Survived' en categorica
 dataset_final$Survived<-factor(dataset_final$Survived)
 
-write.csv(dataset_final,"dataset_titanic_clean.csv")
+write.csv(dataset_final,"out/dataset_titanic_clean.csv")
 ```
 
 Podem observar com el dataset final conté 6 variables categoriques i 2 variables numériques (a banda de l'identificador del passatger i si la informació de si va sobreviure o no)
@@ -742,15 +738,16 @@ dataset_final.Noble<-dataset_final[which(dataset_final$title=='noble'),]
 table(dataset_final$Survived,useNA='always')
 dataset_final.Viu<-dataset_final[which(dataset_final$Survived=='0'),]
 dataset_final.Mor<-dataset_final[which(dataset_final$Survived=='1'),]
-
 ```
 
 ## 4.1. Comprobació de la normalitat variables quantitatives
 
-Per a comprobar que les variables quantitatives que tenim segueixen una distribució normal utilitzarem el test de Shapiro-Wilk
+Per a comprobar que les variables quantitatives que tenim segueixen una distribució normal utilitzarem el test de Shapiro-Wilk:
+
 ```{r}
 # Price
 shapiro.Price<-shapiro.test(dataset_final$Price_Per_Person)
+
 # Age
 shapiro.Age_imp<-shapiro.test(dataset_final$Age_imp)
 
@@ -774,7 +771,6 @@ shapiro.C2.Price<-shapiro.test(dataset_final.Class2$Price_Per_Person)
 
 # Price class3
 shapiro.C3.Price<-shapiro.test(dataset_final.Class3$Price_Per_Person)
-
 ```
 
 ### 4.1.1. Resultats
@@ -821,17 +817,17 @@ table_res<-matrix(c(round(mean(dataset_final$Price_Per_Person),2),
 colnames(table_res)<-c("Mean","Median","sd","Shapiro-Wilk (p)")
 rownames(table_res)<-c("Price","Age","Price Supervivents","Price Morts","Price Class 1", "Price Class 2", "Price Class 3", "Age Supervivents","Age Morts")
 table_res<-as.table(table_res)
-
-
 ```
 
 ```{r ,echo=FALSE}
 knitr::kable(table_res, caption = "Resultats de les distribucions de les variables contínues'.")%>% 
   kable_styling(latex_options="scale_down")
 ```
+
 Podem observar com cap de les variables continues analitzades (Age i Price) segueix una distribució normal en cap dels grups testats. El p-value del test de Shapiro-Wilk és < 0.5 en tots els casos. Per tant, en tots els casos és rebutja la hipòtesis nul·la que considera que la distribució és normal.
 
 Comprobem si la variable edat segueix una distribució normal en algun dels grups creats anteriorment.
+
 ```{r}
 shapiro.C1.Age_imp<-shapiro.test(dataset_final.Class1$Age_imp)
 shapiro.C2.Age_imp<-shapiro.test(dataset_final.Class2$Age_imp)
@@ -857,7 +853,6 @@ shapiro.Miss.Age_imp<-shapiro.test(dataset_final.Miss$Age_imp)
 shapiro.Mr.Age_imp<-shapiro.test(dataset_final.Mr$Age_imp)
 shapiro.Mrs.Age_imp<-shapiro.test(dataset_final.Mrs$Age_imp)
 shapiro.Noble.Age_imp<-shapiro.test(dataset_final.Noble$Age_imp)
-
 ```
 
 ```{r}
@@ -891,14 +886,13 @@ table_res2<-matrix(c(
 colnames(table_res2)<-c("Shapiro-Wilk (p)")
 rownames(table_res2)<-c("Classe 1","Classe 2","Classe 3","Homes","Dones", "Zona A", "Zona B", "Zona C", "Zona D", "Zona E", "Zona F", "Zona G", "Sol", "Familia petita","Familia moderada", "Familia gran", "Preu tiquet baix", "Preu tiquet mig", "Preu tiquet alt", "Master", "Miss", "Mr", "Mrs", "Nobles")
 table_res2<-as.table(table_res2)
-
-
 ```
 
 ```{r ,echo=FALSE}
 knitr::kable(table_res2, caption = "Test de normalitat en la distribució de l'edat en cadascun dels grups analitzats'.")%>% 
   kable_styling(latex_options="scale_down")
 ```
+
 Podem observar com hi ha alguns grups on si que l'edat segeuix una distribució normal. Aquest és el cas per exemple dels passatgers de 1a classe, els que van pagar un preu alt per el tiquet (que és bastant equivalent a ser de 1a classe) i segons les zones de la cabina (amb l'excepció de la zona B).
 
 Podem comprobar alguna d'aquestes distribucions de forma visual. Ho farem amb els passatgers que viatgen en class 1.
@@ -909,17 +903,15 @@ p_AgeClass1<-ggplot(dataset_final.Class1, aes(x=Age_imp)) +
   geom_density(alpha=0.4)+ geom_vline(xintercept = mean(dataset_final.Class1$Age_imp), linetype="dashed", 
                 color = "red", size=0.5)
 
-
 p_AgeClass1
 ```
-
-
 
 ## 4.3. Comprovació de l'homoscedasticitat
 
 Per a comprobar l'homoscedasticitat (i.e. la homogeneitat de la variança) apliquem el test de Fligner-Killen (test no parametric) ja que com hem vist abans cap de les nostres variables continues segueix una distribució normal.
 
 Aplicarem aquest test per a comprobar si la variança en les variables edat i preu del tiquet són homogenies entre tots els grups de les variables categoriques
+
 ```{r}
 # Comprovem per l'edat
 flin_Pclass<-fligner.test(Age_imp ~ Pclass, data = dataset_final)
@@ -943,7 +935,6 @@ flin_Survived_Price<-fligner.test(Price_Per_Person ~ Survived, data = dataset_fi
 Creem la taula amb els resultats:
 
 ```{r}
-
 table_res4<-matrix(c(
   flin_Pclass$p.value,
   flin_Sex$p.value,
@@ -963,7 +954,6 @@ table_res4<-matrix(c(
 colnames(table_res4)<-c("Fligner-Killeen (p)")
 rownames(table_res4)<-c("Edat segons classe","Edat segons sexe","Edat segons zona", "Edat segons tamany de la familia", "Edat segons categoria de preu", "Edat segons titol", "Edat segons supervivencia","Preu segons classe","Preu segons sexe","Preu segons zona", "Preu segons tamany de la familia", "Preu segons categoria de preu", "Preu segons titol", "Preu segons supervivencia")
 table_res4<-as.table(table_res4)
-
 ```
 
 ```{r ,echo=FALSE}
@@ -974,8 +964,8 @@ knitr::kable(table_res4, caption = "Test de Fligner-Killeen de homogeneitat de l
 Podem observar que tans sols la variança de l'edat a través de les diferentes zones és homogenia (acceptem la hipotesis de que les variances són homogenies ja que el p-valor > 0.5).
 La variança tant de l'edat com del preu del tiquet no és homogenia entre categories de la resta de variables.
 
-
 ## 4.2. Distribucions de les variables entre passatgers supervivents i no supervivents
+
 ```{r}
 # Variables continues
 p_price<-ggplot(dataset_final[which(!(is.na(dataset_final$Survived))),], aes(x=Price_Per_Person, fill=Survived)) +
@@ -1001,19 +991,20 @@ figure_Dis
 ## 4.3. Comparació entre dos grups de dades (variables continues)
 
 Comprovem si hi ha diferencies significatives en la edat i el preu del bitllet entre la gent que va sobreviure i els que van morir.
-```{r}
 
+```{r}
 wilcox.test(Price_Per_Person ~ Survived, data = dataset_final[which(!(is.na(dataset_final$Survived))),])
 wilcox.test(Age_imp ~ Survived, data = dataset_final[which(!(is.na(dataset_final$Survived))),])
 ```
+
 Podem observar que hi ha diferencies significatives entre el preu pagat per tiquet de la gent que va sobreviure (més alt) i la que va morir (més baix)
 En canvi, no s'aprecien diferencies significatives entre la edat de la gent que va sobreviure i la que va morir.
 
 ## 4.4. Comparació entre dos grups de dades (variables categoriques)
 
 Mirem si hi ha diferencies entre les proporcions dels diferents grups de les variables categoriques entre la gent que va sobreviure i la que va morir.
-```{r}
 
+```{r}
 # Segons el sexe
 sup_sex<-t(table(dataset_final[which(!(is.na(dataset_final$Survived))),]$Sex,dataset_final[which(!(is.na(dataset_final$Survived))),]$Survived))
 sup_sex
@@ -1048,27 +1039,25 @@ chisq.test(sup_Embarked)
 sup_AgeCat<-t(table(dataset_final[which(!(is.na(dataset_final$Survived))),]$AgeCat,dataset_final[which(!(is.na(dataset_final$Survived))),]$Survived))
 sup_AgeCat
 chisq.test(sup_AgeCat)
-
 ```
+
 Podem observar que hi ha diferencies significatives entre les diferents classes de totes les variables categoriques analitzades entre la gent que va sobreviure i la que va morir.
 
-
 ## 4.6. Correlació entre variables
+
 Calculem la correlació entre les variables continues. Utilitzem el metode de "Spearman" ja que les dades no segueixen una distribució normal.
+
 ```{r}
 dataset_final_cont<-dataset_final[,c("Price_Per_Person","Age_imp")]
-
 cor.test(dataset_final_cont$Price_Per_Person,dataset_final_cont$Age_imp, method = "spearman")
-
 ```
+
 Podem observar com l'edat és correlaciona significativament amb el preu del bitllet pagat.
 
 ```{r}
 corr.res<-cor(dataset_final_cont, method = 'spearman')
-
 # Si tinguessim més variables podriem crear un grafic amb el codi següent:
 #corrplot.mixed(corr.res,upper="circle",number.cex=.7,tl.cex=.8)
-
 ```
 
 \newpage
@@ -1077,11 +1066,7 @@ corr.res<-cor(dataset_final_cont, method = 'spearman')
 
 ## 5.1. Arbre de decisió
 
-***
-
 **Construcció del model**
-
-***
 
 Una manera d'analitzar el dataset és aplicant un model de classificació basat en arbre, el qual ens permetrà veure quines variables tenen més influència a l'hora de determinar la probabilitat de supervivència de cada passatger a partir de les variables que el configuren. 
 
@@ -1148,6 +1133,7 @@ Comprovem utilitzant la funció has_na que no hi ha variables del dataset amb va
 has_na(train_x)
 has_na(test_x)
 ```
+
 I que tant les variables descriptives com les corresponents a la classe tenen la mateixa mida:
 
 ```{r}
@@ -1169,11 +1155,7 @@ model_tree_for_plot <- C50::C5.0(train_x, train_y)
 plot(model_tree_for_plot)
 ```
 
-***
-
 **Avaluació del model**
-
-***
 
 Amb el model d'arbre de decisió creat a partir de les dades del conjunt d'entrenament podem avaluar la seva eficiència intentant predir les dades que es troben al conjunt de prova. Per fer-ho utilitzem la funció *predict* de R que classifica els diferents registres del conjunt de prova (test_X) utilitzant el model que rep (model_tree).
 
@@ -1188,11 +1170,7 @@ precisio_model <- sum(predicted_test == test_y)/length(predicted_test)
 print(paste("La precisió del model és de ", round(precisio_model*100,2), "%", sep=""))
 ```
 
-***
-
 **Comentaris del model**
-
-***
 
 Utilitzant el model basat en arbres de decisió hem obtingut una precisió de 82.15%, la qual és un resultat bastant correcte i que demostra que realment existeix una influència de les variables descriptives a l'hora de predir la classe. Tal i com hem pogut observar a partir del gràfic i el resum del model creat, aquest no ha utilitzat totes les variables ja que ha prescindit de la variable AgeCat. 
 
@@ -1200,11 +1178,7 @@ També hem pogut veure que la variable que té més pes a l'hora de determinar e
 
 ## 5.2. Support Vector Machine
 
-***
-
 **Construcció del model**
-
-***
 
 Per construir un model basat en SVM utilitzarem les mateixes dades transformades que en l'apartat anterior ja que al igual que els arbres de decisió, un model basat en svm utilitza també variables categòriques.
 
@@ -1227,11 +1201,7 @@ Un cop creat el model, n'observem un resum utilitzant la funció *summary*:
 summary(SVM_model.train)
 ```
 
-***
-
 **Avaluació del model**
-
-***
 
 Un cop creat el model procedim a avaluar-lo predint els casos de test. Per fer-ho, al igual que en l'apartat anterior fem ús de la funció *predict*, la qual rep el model creat i els registres dels casos que es volen predir.
 
@@ -1253,21 +1223,13 @@ precisio_model_matriu_conf <- sum(diag(matriu_conf_svm)) / sum(matriu_conf_svm)
 print(paste("La precisió del model és de ", round(precisio_model_matriu_conf*100,2), "%", sep=""))
 ```
 
-***
-
 **Comentaris del model**
-
-***
 
 Utilitzant el model basat en SVM obtenim una precisió del 83.16%, lleugerament millor que el que s'ha obtingut utilitzant arbres de decisió.
 
 ## 5.3. Regressió logística
 
-***
-
 **Construcció del model**
-
-***
 
 Un altre mètode per analitzar les dades és aplicant una regressió logística, ja que aquesta ens permet realitzar una classificació a partir de la descripció d'un registre. Per crear el model podem utilitzar la funció *glm*, on cal especificar la variable a predir (*Fate*), les variables descriptives i el dataframe que s'utilitza. També cal especificar que la classe que es vol predir consta de nomes dos valors establint el valor *binomial* al paràmetre *family*.
 
@@ -1281,11 +1243,7 @@ Un cop creat el model podem visualitzar-ne la seva descripció utilitzant la fun
 summary(model_glm)
 ```
 
-***
-
 **Avaluació del model**
-
-***
 
 Per avaluar el model tornem a utilitzar els registres de la variable *test_x* i els passem a la funció *predict*:
 
@@ -1320,11 +1278,7 @@ precisio_model_matriu_conf_glm <- sum(diag(matriu_conf_glm)) / sum(matriu_conf_g
 print(paste("La precisió del model és de ", round(precisio_model_matriu_conf_glm*100,2), "%", sep=""))
 ```
 
-***
-
 **Comentaris del model**
-
-***
 
 Utilitzant la regressió logística obtenim una precisió del 83.84%, lleugerament superior a la resta de modelitzacions provades. Observant el resum del model podem veure com les categòries que més influèixen en la decisió de la classe d'un passatger utilitzant aquesta modelització és quan el títol del passatger és noble o simplement Mr (ja que indica que no poseeix cap títol nobiliari i pertany al gènere masculí). També influeix que el passatger viatgi sol o amb poca companyia i el fet de si és o no ancià.
 
@@ -1356,17 +1310,15 @@ colnames(df_competition) <- c("PassengerId", "Survived")
 Finalment generem el fitxer csv que conté la predicció:
 
 ```{r}
-write.csv(df_competition, "prediction_comp.csv", row.names=FALSE, quote=FALSE)
+write.csv(df_competition, "out/prediction_comp.csv", row.names=FALSE, quote=FALSE)
 ```
 
 \newpage
 # 7. Conclusions
 
-```{r}
+Com ja s'ha pogut veure en aquesta pràctica hem utilitzat moltes tècniques diferents per tal d'aconseguir netejar, preprocessar i analitzar les dades del dataset escollit. Entre altres coses hem consolidat conceptes relatius al tractament de valors nuls i extrems, discretització de variables, aplicació de testos per avaluar la normalitat i homoscedasticitat d'una variable, generació i avaluació de models predictius, generació de gràfics d'interés, etc. 
 
-
-
-```
+Una de les coses que ens ha cridat més l'atenció ha estat veure com la creació d'una variable particular (title) ha aportat als models predictius creats tanta informació i ens ha recordat com el preprocessat és de les etapes més importants a l'hora d'estudiar les dades. Al llarg d'aquesta pràctica hem consolidat diversos conceptes vistos al llarg de l'assignatura i hem après noves tècniques d'anàlisi i exploració de les dades, motiu pel qual considerem que ha estat molt productiva.
 
 \newpage
 
@@ -1384,11 +1336,18 @@ knitr::kable(table_contributions, align = 'c', caption = "Tots els membres han c
 
 # 8. Bibliografia
 
-- Gibergans, J. (2019). Regressió lineal simple. Editorial UOC.
+- Calvo, M., Pérez, D., Subirats, L. (2019). Introducció a la neteja i anàlisi de les dades. Editorial UOC.
 
-- Gibergans, J. (2019). Regressió lineal múltiple. Editorial UOC.
+- Gil, A. J. (2019). Estadística descriptiva. Editorial UOC.
+
+- Bernadó, E. (2020). Test d'hipòtesis. Editorial UOC.
+
+- Rovira, C. (2019). Contrast d'hipòtesis. Editorial UOC.
+
+- Gibergans, J. (2019). Contrast de variàncies. Editorial UOC.
+
+- Sangüesa, R. (2019). Classificació: arbres de decisió. Editorial UOC.
 
 - Guillén, M., Alonso, M. T. (2019). Models de regressió logística. Editorial UOC.
 
-- Liviano, D., Pujol, M. (2019). Models de regressió i anàlisi multivariant amb R-Commander. Editorial UOC.
-
+- Sangüesa, R. (2019). Avaluació de models. Editorial UOC.
