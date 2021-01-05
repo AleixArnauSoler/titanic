@@ -237,6 +237,8 @@ dataset[62,]$Embarked<-'S'
 dataset[830,]$Embarked<-'S'
 
 table(dataset$Embarked,useNA='always')
+
+dataset$Embarked<-droplevels(dataset$Embarked)
 ```
 
 En quan a la variable 'Fare', assumirem que aquest té el mateix valor mig que el que altres passatgers de viatjant en circumstancies similars van pagar.
@@ -571,7 +573,10 @@ summary(dataset$Age_imp)
 ```
 
 ```{r}
-dataset["AgeCat"] <- cut(dataset$Age_imp, breaks = c(0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85), labels = c("0-5","5-10","10-15","15-20","20-25","25-30","30-35","35-40","40-45","45-50","50-55","55-60","60-65","65-70","70-75","75-80","80-85"))
+dataset["AgeCat"] <- cut(dataset$Age_imp, breaks = c(-1,10,18,55,100), labels = c("nens","adolescents","adults","ancians"))
+
+table(dataset$AgeCat,useNA='always')
+
 ```
 
 
@@ -638,7 +643,7 @@ deteccio_valors_atipics(dataset,c("Age_imp","SibSp","Parch","Price_Per_Person","
 
 Primer de tot reduim la dimensionalitat del nostre dataset actual per a només treballar amb les variables que ens interessa analitzar. Incorporem també les dades de supervivencia en aquells passatgers pels quals coneixem si van sobreviure o no. I guardarem el fitxer com a 'dataset_titanic_clean.csv', el qual conté les dades netes que utilitzarem més endavant per als analizis.
 ```{r}
-dataset_net<-dataset[,c("PassengerId","Pclass","Sex","Zona","FamilyCat","Price_Per_Person","PriceCat","Age_imp","title")]
+dataset_net<-dataset[,c("PassengerId","Pclass","Sex","Zona","FamilyCat","Price_Per_Person","PriceCat","Age_imp","title","Embarked","AgeCat")]
 
 # El dataset final
 dataset_final<-merge(dataset_net,train_predictions,by = "PassengerId", all = T)
@@ -859,8 +864,8 @@ Per poder aplicar la funció relativa a la construcció del model cal diferencia
 
 ```{r}
 set.seed(1912)
-y <- dataset_train_random[,20]
-x <- dataset_train_random[,c(2,4,11,13,17,19)]
+y <- dataset_train_random[,"Survived"]
+x <- dataset_train_random[,c("Pclass","Sex","FamilyCat","PriceCat","title","Embarked","AgeCat")]
 ```
 
 Un cop obtinguda la mostra desordenada, anem a dividir el conjunt d edades en mostres d'entrenament i test. El conjunt d'entrenament serà aquell que s'utilitzarà per construir el model i el conjunt de proves el que s'utilitzarà per avaluar la seva precisió. Seguidament obtenim els diferents conjunts d'entrenament i test a partir de la proporció de casos que hem triat per cada conjunt (2/3 i 1/3) utilitzant la funció *sample*:
@@ -872,13 +877,6 @@ train_x <- x[indexes,]
 train_y <- y[indexes]
 test_x  <- x[-indexes,]
 test_y  <- y[-indexes]
-```
-
-Per aplicar l'algoritme de construcció del model d'arbre de decisió cal que no existeixi cap variable que tingui valors corresponents a una cadena de caràcters buida. Per solucionar-ho canviem el valor d'aquesta categòria per la paraula "desconegut":
-
-```{r}
-levels(train_x$Embarked)[1] <- "desconegut"
-levels(test_x$Embarked)[1] <- "desconegut"
 ```
 
 Per poder executar el mètode cal que no existeixin valors nul, els eliminem. Per això hem creat una funció que retorna els indexs de les files que contenen algun valor nul en un dataframe.
