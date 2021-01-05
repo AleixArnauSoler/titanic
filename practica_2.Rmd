@@ -244,6 +244,7 @@ dataset$Embarked<-droplevels(dataset$Embarked)
 ```
 
 En quan a la variable 'Fare', assumirem que aquest té el mateix valor mig que el que altres passatgers de viatjant en circumstancies similars van pagar.
+
 ```{r}
 # Aquests es troba en el passatger número 1044
 dataset[which(is.na(dataset$Fare)),]
@@ -251,7 +252,6 @@ dataset[which(is.na(dataset$Fare)),]
 dataset[1044,]$Fare<-mean(dataset[which(dataset$Pclass==3&dataset$SibSp==0&dataset$Parch==0),]$Fare,na.rm = T)
 
 dataset[1044,]$Fare
-
 ```
 
 La variable 'Cabin' conté molts valors mencants, per a tant els tractarem com a mencants i no intentarem imputar els que falten.
@@ -290,6 +290,7 @@ nrow(dataset.femaleC3Parch1)
 ```
 
 Comprovem si cadascun dels grups mostre distribucions d'edat amb mitjanes diferents.
+
 ```{r}
 
 #maleC1Parch0
@@ -736,6 +737,7 @@ dataset_final.Mor<-dataset_final[which(dataset_final$Survived=='1'),]
 ## 4.1. Comprobació de la normalitat variables quantitatives
 
 Per a comprobar que les variables quantitatives que tenim segueixen una distribució normal utilitzarem el test de Shapiro-Wilk
+
 ```{r}
 # Price
 shapiro.Price<-shapiro.test(dataset_final$Price_Per_Person)
@@ -753,7 +755,6 @@ shapiro.Su.Age_imp<-shapiro.test(dataset_final.Viu$Age_imp)
 
 # Age Morts
 shapiro.Mo.Age_imp<-shapiro.test(dataset_final.Mor$Age_imp)
-
 ```
 
 ## 4.1.1. Resultats
@@ -787,13 +788,11 @@ table_res<-matrix(c(round(mean(dataset_final$Price_Per_Person),2),
 
 colnames(table_res)<-c("Mean","Median","sd","Shapiro-Wilk (p)")
 rownames(table_res)<-c("Price","Age","Price Supervivents","Price Morts","Age Supervivents","Age Morts")
-table_res<-as.table(table_res)
-
-
+table_res <- as.table(table_res)
 ```
 
 ```{r ,echo=FALSE}
-knitr::kable(table_res, caption = "Resultats de les distribucions de les variables contínues'.")%>% 
+knitr::kable(table_res, caption = "Resultats de les distribucions de les variables contínues'.") %>% 
   kable_styling(latex_options="scale_down")
 ```
 
@@ -918,12 +917,22 @@ Amb el model d'arbre de decisió creat a partir de les dades del conjunt d'entre
 predicted_test <- predict(model_tree,test_x, type="class")
 ```
 
-Si observem el resultat d'aquesta funció veiem que es correspon a un vector amb les etiquetes de la classe. Per comprovar la precisió de l'arbre avaluem quantes d'aquestes etiquetes predites es corresponen al valor real que té el registre comparant-lo amb el contingut de la variable *test_y_no_na*:
+Si observem el resultat d'aquesta funció veiem que es correspon a un vector amb les etiquetes de la classe. Per comprovar la precisió de l'arbre avaluem quantes d'aquestes etiquetes predites es corresponen al valor real que té el registre comparant-lo amb el contingut de la variable *test_y*:
 
 ```{r}
 precisio_model <- sum(predicted_test == test_y)/length(predicted_test)
 print(paste("La precisió del model és de ", round(precisio_model*100,2), "%", sep=""))
 ```
+
+***
+
+**Comentaris del model**
+
+***
+
+Utilitzant el model basat en arbres de decisió hem obtingut una precisió de 82.15%, la qual és un resultat bastant correcte i que demostra que realment existeix una influència de les variables descriptives a l'hora de predir la classe. Tal i com hem pogut observar a partir del gràfic i el resum del model creat, aquest no ha utilitzat totes les variables ja que ha prescindit de la variable AgeCat. 
+
+També hem pogut veure que la variable que té més pes a l'hora de determinar el destí dels passatgers del titanic és el sexe, el qual té un pes del 93.77% en el model creat. El títol nobiliari del passatger també guarda una forta relació amb el model, mantenint un 62.79%. Finalment trobem que la dimensió de la família i classe dels tiquets també tenen una influència considerable però menor respecte les dues anteriors comentades.
 
 ## 4.2. Support Vector Machine
 
@@ -946,6 +955,12 @@ Seguidament ja podem crear el model, per la qual cosa és necessari especificar 
 
 ```{r}
 SVM_model.train <- svm(Fate ~ Pclass + Sex + Embarked + title + FamilyCat + AgeCat, data = train_x, probability = TRUE)
+```
+
+Un cop creat el model, n'observem un resum utilitzant la funció *summary*:
+
+```{r}
+summary(SVM_model.train)
 ```
 
 ***
@@ -974,30 +989,122 @@ precisio_model_matriu_conf <- sum(diag(matriu_conf_svm)) / sum(matriu_conf_svm)
 print(paste("La precisió del model és de ", round(precisio_model_matriu_conf*100,2), "%", sep=""))
 ```
 
+***
+
+**Comentaris del model**
+
+***
+
+Utilitzant el model basat en SVM obtenim una precisió del 83.16%, lleugerament millor que el que s'ha obtingut utilitzant arbres de decisió.
+
 ## 4.3. Regressió logística
 
-```{r}
+***
 
+**Construcció del model**
+
+***
+
+Un altre mètode per analitzar les dades és aplicant una regressió logística, ja que aquesta ens permet realitzar una classificació a partir de la descripció d'un registre. Per crear el model podem utilitzar la funció *glm*, on cal especificar la variable a predir (*Fate*), les variables descriptives i el dataframe que s'utilitza. També cal especificar que la classe que es vol predir consta de nomes dos valors establint el valor *binomial* al paràmetre *family*.
+
+```{r}
+model_glm <- glm(formula=Fate~Pclass+Sex+FamilyCat+PriceCat+title+Embarked+AgeCat,data=train_x,family=binomial(link=logit))
 ```
 
+Un cop creat el model podem visualitzar-ne la seva descripció utilitzant la funció *summary*:
+
+```{r}
+summary(model_glm)
+```
+
+***
+
+**Avaluació del model**
+
+***
+
+Per avaluar el model tornem a utilitzar els registres de la variable *test_x* i els passem a la funció *predict*:
+
+```{r}
+probs_prediction_glm <- predict(model_glm, newdata=test_x, type="response")
+head(probs_prediction_glm)
+```
+
+Com podem veure la predicció d'aquest model retorna la probabilitat de que els registre pertanyin o no a la variable dictòmica que es vol predir, motiu pel qual cal realitzar una conversió als valors 0 i 1 abans de poder comparar els resultats predits amb els reals de la variable test_y:
+
+```{r}
+prediction_glm <- c()
+for (i in probs_prediction_glm) {
+  if (i<0.5)
+    prediction_glm <- c(prediction_glm,0)
+  else
+    prediction_glm <- c(prediction_glm,1) 
+}
+```
+
+Un cop obtinguts els valors predits amb el mateix format dels valors reals, procedim a crear una matriu de confusió per veure com s'han distribuït els encerts i les errades: 
+
+```{r}
+CrossTable(test_y, prediction_glm, prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE, dnn = c("Realitat", "Predicció"))
+```
+
+Per obtenir una mesura de la bondat del model apliquem el mateix procediment que el que hem vist en els dos subapartats anteriors, fent ús de la matriu de confusió:
+
+```{r}
+matriu_conf_glm <- table(test_y,Predicted=prediction_glm)
+precisio_model_matriu_conf_glm <- sum(diag(matriu_conf_glm)) / sum(matriu_conf_glm)
+print(paste("La precisió del model és de ", round(precisio_model_matriu_conf_glm*100,2), "%", sep=""))
+```
+
+***
+
+**Comentaris del model**
+
+***
+
+Utilitzant la regressió logística obtenim una precisió del 83.84%, lleugerament superior a la resta de modelitzacions provades. Observant el resum del model podem veure com les categòries que més influèixen en la decisió de la classe d'un passatger utilitzant aquesta modelització és quan el títol del passatger és noble o simplement Mr (ja que indica que no poseeix cap títol nobiliari i pertany al gènere masculí). També influeix que el passatger viatgi sol o amb poca companyia i el fet de si és o no ancià.
 
 # 5. Resultats finals
 
 ```{r}
-```
 
-
-```{r}
-```
-
-```{r}
 ```
 
 # 6. Conclusions
 
 ```{r}
+
 ```
 
+# 7. Predicció
+
+Arribats a aquest punt hem volgut presentar-hi els nostres resultats a la competició activa de la pàgina Kaggle. Per fer-ho hem predit els registres corresponents al fitxer de test (*test.csv*) utilitzant el model que ens ha donat millors resultats: el model basat en la regressió logística.
+
+```{r}
+# Obtenim les probabilitats de classe dels registes corresponents a l'apartat de test
+probs_prediction_glm_competition <- predict(model_glm, newdata=dataset_test, type="response")
+# Convertim les probabilitats en predicció
+prediction_glm_comp <- c()
+for (i in probs_prediction_glm_competition) {
+  if (i<0.5)
+    prediction_glm_comp <- c(prediction_glm_comp,0)
+  else
+    prediction_glm_comp <- c(prediction_glm_comp,1) 
+}
+```
+
+Un cop obtinguda la predicció la guardem en un dataframe amb l'identificador del passatger:
+
+```{r}
+df_competition <- data.frame(dataset_test$PassengerId,prediction_glm_comp)
+colnames(df_competition) <- c("PassengerId", "Survived")
+```
+
+Finalment generem el fitxer csv que conté la predicció:
+
+```{r}
+write.csv(df_competition, "prediction_comp.csv", row.names=FALSE, quote=FALSE)
+```
 
 # 7. Bibliografia
 
@@ -1008,10 +1115,6 @@ print(paste("La precisió del model és de ", round(precisio_model_matriu_conf*1
 - Guillén, M., Alonso, M. T. (2019). Models de regressió logística. Editorial UOC.
 
 - Liviano, D., Pujol, M. (2019). Models de regressió i anàlisi multivariant amb R-Commander. Editorial UOC.
-
-
-
-
 
 
 Integrem les dades del dataset de test amb les dades de les seves corresponents prediccions de supervivencia si les dones, i només les dones, haguessin sobreviscut.
