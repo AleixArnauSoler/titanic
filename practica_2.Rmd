@@ -287,6 +287,7 @@ nrow(dataset.femaleC3Parch1)
 ```
 
 Comprovem si cadascun dels grups mostre distribucions d'edat amb mitjanes diferents.
+
 ```{r}
 
 #maleC1Parch0
@@ -481,6 +482,7 @@ table(dataset$title)
 ### 3.2.2. Creació variable 'Zona'
 
 De la variable 'cabin' extreiem la lletra que segurament representa la zona del vaixell on es troba la cabina.
+
 ```{r}
 Zona <- dataset %>%
   select(Cabin) %>%
@@ -492,6 +494,7 @@ dataset$Zona<-Zona$Zona
 ### 3.2.3. Creació variable 'Familiy_Size'
 
 El tamany de les families es pot inferir a partir de les variables 'SibSp' i 'Parch'. A més, tota aquella gent que comparteixi cognom és probable que formin part de la mateixa familia.
+
 Dataset d'entrenament:
 
 ```{r}
@@ -515,7 +518,7 @@ dataset %>%
 
 ```
 
-Categorizem el tamany de les families segons si el passatger va sol, en familia/grup gran o petit
+Categorizem el tamany de les families segons si el passatger va sol, en familia/grup gran o petit:
 
 ```{r}
 
@@ -537,12 +540,12 @@ dataset$Price_Per_Person<-dataset$Fare/dataset$Family_size
 ```
  
 Podem visualitzar com ara el preu pagat per ticket per a cada passatger, es mou dins d'un rang logic segons la classe en la que viatjaven: 1a classe = >20 dolars, 2a class = 10-20 dollars, 3a classe = < 10 dolars.
+
 ```{r}
 # Use semi-transparent fill
 p_fare<-ggplot(dataset[which(dataset$Fare<100),], aes(x=Fare, fill=Pclass)) +
   geom_density(alpha=0.4)
 p_fare
-
 ```
 
 ```{r}
@@ -554,6 +557,7 @@ p_priceperson
 ```
 
 Finalment, podem tornar a comprobar que només tenim valors mencants a la variable 'Cabin'
+
 ```{r}
 has_na(dataset)
 table(dataset$Embarked,useNA='always')
@@ -563,14 +567,14 @@ table(dataset$Embarked,useNA='always')
 
 Categorizem l'edat dels passatgers en intervals de 5 anys amb l'objectiu de poder utilitzar aquesta variable a l'hora d'aplicar mètodes que utilitzen atributs categòrics en l'etapa d'anàlisi.
 
-Observem quin és el rang de valors que pren la variable *Age*:
+Observem quin és el rang de valors que pren la variable *Age.y* transformada prèviament:
 
 ```{r}
-summary(dataset$Age)
+str(dataset$Age.y)
 ```
 
 ```{r}
-dataset["AgeCat"] <- cut(dataset$Age, breaks = c(0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85), labels = c("0-5","5-10","10-15","15-20","20-25","25-30","30-35","35-40","40-45","45-50","50-55","55-60","60-65","65-70","70-75","75-80","80-85"))
+dataset["AgeCat"] <- cut(dataset$Age.y, breaks = c(0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85), labels = c("0-5","5-10","10-15","15-20","20-25","25-30","30-35","35-40","40-45","45-50","50-55","55-60","60-65","65-70","70-75","75-80","80-85"))
 ```
 
 
@@ -678,31 +682,40 @@ Les variables que s'han utilitzat per construir el model són les següents:
 
 * AgeCat
 
-Per poder aplicar aquest mètode, és necessari entrenar el model a generar amb els registres corresponents al dataset de train i separar les variables descriptives de la classe que es vol predir. El següent tall de codi prepara les variables que s'utilitzaran a l'etapa d'entrenament i les que s'utilitzaran per avaluar la precisió del model.
+Per poder aplicar aquest mètode, és necessari entrenar el model a generar amb els registres corresponents al dataset de train i separar les variables descriptives de la classe que es vol predir. El següent tall de codi prepara les variables que s'utilitzaran a l'etapa d'entrenament i les que s'utilitzaran per avaluar la precisió del model. Com que de les variables de test no coneixem la classe definitiva el que farem serà partir el dataset d'entrenament en dos subconjunts un dels quals servirà per entrenar el model i l'altre per avaluar-lo (2/3 dels registres per l'avaluació i el 1/3 restant per a l'entrenament).
+
+Com que les dades estan ordenades i cal barrejar-les per tal que la tria sigui el màxim d'equitativa possible i no interfereixi amb el resultat que proporcionarà el model. Per fer-ho, apliquem el següent codi i guardem el resultat a la variable *dataset_train_random*:
 
 ```{r}
-str(dataset_train)
+set.seed(1912)
+dataset_train_random <- dataset_train[sample(nrow(dataset_train)),]
+str(dataset_train_random)
 ```
 
+Per poder aplicar la funció relativa a la construcció del model cal diferenciar entre les variables descriptives i la classe. Això ho fem seleccionant l'índex de la columna on es troba la classe (columna 7) i la resta (columnes de la 1 a 6). Els valors corresponents a la classe els guardem a la variable y_car i els corresponents a les variables descriptives a la x_car:
 
 ```{r}
-# Preparem les variables que s'utilitzaran per entrenar el model
-train_X <- dataset_train[,c(2,4,11,12,16,18)]
-train_y <- dataset_train[,19]
-# Preparem les variables que s'utilitzaran per avaluar el model
-test_X  <- dataset_test[,c(2,4,11,12,16,18)]
-test_y  <- dataset_test[,19]
-# Per aplicar aquest model cal que la classe sigui de tipus factor
-train_y <- as.factor(train_y)
-test_y  <- as.factor(test_y)
+set.seed(1912)
+y <- dataset_train_random[,20]
+x <- dataset_train_random[,c(2,4,11,13,17,19)]
 ```
 
- 
+Un cop obtinguda la mostra desordenada, anem a dividir el conjunt d edades en mostres d'entrenament i test. El conjunt d'entrenament serà aquell que s'utilitzarà per construir el model i el conjunt de proves el que s'utilitzarà per avaluar la seva precisió. Seguidament obtenim els diferents conjunts d'entrenament i test a partir de la proporció de casos que hem triat per cada conjunt (2/3 i 1/3) utilitzant la funció *sample*:
+
+```{r}
+set.seed(1912)
+indexes = sample(1:nrow(x), size=floor((2/3)*nrow(x)))
+train_x <- x[indexes,]
+train_y <- y[indexes]
+test_x  <- x[-indexes,]
+test_y  <- y[-indexes]
+```
+
 Per aplicar l'algoritme de construcció del model d'arbre de decisió cal que no existeixi cap variable que tingui valors corresponents a una cadena de caràcters buida. Per solucionar-ho canviem el valor d'aquesta categòria per la paraula "desconegut":
 
 ```{r}
-levels(train_X$Embarked)[1] <- "desconegut"
-levels(test_X$Embarked)[1] <- "desconegut"
+levels(train_x$Embarked)[1] <- "desconegut"
+levels(test_x$Embarked)[1] <- "desconegut"
 ```
 
 Per poder executar el mètode cal que no existeixin valors nul, els eliminem. Per això hem creat una funció que retorna els indexs de les files que contenen algun valor nul en un dataframe.
@@ -719,31 +732,54 @@ indices_with_na <- function(data) {
 }
 ```
 
-Un cop creada la funció detectem els indexs amb valors nul i els eliminem de les variables que s'utilitzaran per entrenar i avaluar el model:
+Comprovem utilitzant la funció has_na quants quines variables del dataset tenen valors nul:
+
+```{r}
+has_na(train_x)
+has_na(test_x)
+```
+
+Veiem que només la variable AgeCat té valors nul, els suprimim utilitzant la funció *indices_with_na* i guardem el resultat en 4 variables noves:
 
 ```{r}
 # Obtenim els indexs amb valors nul
-iwn_train <- indices_with_na(train_X)
-iwn_test <- indices_with_na(test_X)
+iwn_train <- indices_with_na(train_x)
+iwn_test <- indices_with_na(test_x)
+
 # Eliminem les files de les variables descriptives
-train_X_no_na <- train_X[-iwn_train,]
-test_X_no_na <- test_X[-iwn_test,]
+train_x_no_na <- train_x[-iwn_train,]
+test_x_no_na <- test_x[-iwn_test,]
+
 # Eliminem els valors de les variables corresponents a la classe
-train_y_no_na <- train_y[-iwn_train]
-test_y_no_na <- test_class_raw$Survived
+train_y_no_na <- as.factor(train_y[-iwn_train])
+test_y_no_na <- as.factor(test_y[-iwn_test])
+```
+
+Comprovem que s'han suprimit correctament:
+
+```{r}
+has_na(train_x_no_na)
+has_na(train_x_no_na)
+```
+
+I que tant les variables descriptives com les corresponents a la classe tenen la mateixa mida:
+
+```{r}
+nrow(train_x_no_na) == length(train_y_no_na)
+nrow(test_x_no_na) == length(test_y_no_na)
 ```
 
 Un cop preparades les variables que s'utilitzaran, creem el model utilitzant l'algoritme C5.0 de la llibreria C50 i observem un resum del model generat. 
 
 ```{r}
-model_tree <- C50::C5.0(train_X_no_na, train_y_no_na, rules=TRUE)
+model_tree <- C50::C5.0(train_x_no_na, train_y_no_na, rules=TRUE)
 summary(model_tree)
 ```
 
 Podem observar gràficament el model generat si el construïm sense mostrar les regles i el passem a la funció plot:
 
 ```{r}
-model_tree_for_plot <- C50::C5.0(train_X_no_na, train_y_no_na)
+model_tree_for_plot <- C50::C5.0(train_x_no_na, train_y_no_na)
 plot(model_tree_for_plot)
 ```
 
@@ -756,7 +792,7 @@ plot(model_tree_for_plot)
 Amb el model d'arbre de decisió creat a partir de les dades del conjunt d'entrenament podem avaluar la seva eficiència intentant predir les dades que es troben al conjunt de prova. Per fer-ho utilitzem la funció *predict* de R que classifica els diferents registres del conjunt de prova (test_X) utilitzant el model que rep (model_tree).
 
 ```{r}
-predicted_test <- predict(model_tree,test_X, type="class")
+predicted_test <- predict(model_tree,test_x_no_na, type="class")
 ```
 
 Si observem el resultat d'aquesta funció veiem que es correspon a un vector amb les etiquetes de la classe. Per comprovar la precisió de l'arbre avaluem quantes d'aquestes etiquetes predites es corresponen al valor real que té el registre comparant-lo amb el contingut de la variable *test_y_no_na*:
@@ -799,10 +835,8 @@ print(paste("La precisió del model és de ", round(precisio_model*100,2), "%", 
 
 
 
-
-
-
 Integrem les dades del dataset de test amb les dades de les seves corresponents prediccions de supervivencia si les dones, i només les dones, haguessin sobreviscut.
+
 ```{r}
 names(test_class_raw)[2]<-"AllWomenSurvived"
 test_dataset<-merge(test_raw,test_class_raw,by = 'PassengerId')
