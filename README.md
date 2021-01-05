@@ -2,6 +2,8 @@
 
 ##  Descripció
 
+Aquest repositori conté el codi, dades i respostes per a la realització de la pràctica 2 de l'assignatura "Tipologia i cicle de vida de les dades" del Màster en Ciència de Dades de la Universitat Oberta de Catalunya. La pràctica elaborada consisteix en la implementació de tècniques de neteja i anàlisis de dades. Podeu trobar més informació al pdf adjunt (PRAC1.pdf)
+
 L’enfonsament del Titanic és un dels naufragis més famosos de la història. El 15 d'abril de 1912, durant el seu viatge inaugural, el considerat "inenfonsable" RMS Titanic es va enfonsar després de xocar amb un iceberg. Malauradament, no hi havia prou bots salvavides per a tothom a bord, cosa que va provocar la mort de 1502 de 2224 passatgers i tripulants. Tot i que hi va haver algun element de sort per sobreviure, sembla ser que alguns grups de persones tenien més probabilitats de sobreviure que d’altres.
 
 El dataset utilitzat en aquesta pràctica és *Titanic: Machine Learning from Disaster*, disponible clicant a [*aquí*](https://www.kaggle.com/c/titanic). 
