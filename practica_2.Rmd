@@ -4,15 +4,15 @@ subtitle: 'Pràctica 2: Neteja i anàlisi de les dades'
 author: "Autors: Adrià Tarradas i Aleix Arnau Soler"
 date: "Desembre 2020"
 output:
-  pdf_document:
-    highlight: zenburn
-    toc: yes
   html_document:
     highlight: default
     number_sections: yes
     theme: cosmo
     toc: yes
     toc_depth: 2
+  pdf_document:
+    highlight: zenburn
+    toc: yes
   word_document: default
 header-includes:
    - \usepackage[justification=raggedright,labelfont=bf,singlelinecheck=false]{caption}
@@ -118,6 +118,7 @@ train_raw<-train_raw[,-2]
 
 Comprovem que les dades s'han carregat correctamen i les inspeccionem.
 Dataset d'entrenament:
+
 ```{r}
 # Comprovem que les dimensions del dataset siguin les esperades
 dim(train_raw)
@@ -132,6 +133,7 @@ glimpse(train_raw)
 ```
 
 Dataset de testeig:
+
 ```{r}
 # Comprovem que les dimensions del dataset siguin les esperades
 dim(test_raw)
@@ -146,6 +148,7 @@ glimpse(test_raw)
 ```
 
 Les dimensions són les esperades i el format és equivalent entre els dos datasets.
+
 ```{r}
 head(train_raw)
 head(test_raw)
@@ -166,7 +169,6 @@ dataset <- within(dataset, {
   Age <- as.integer(Age)
   Embarked <- factor(Embarked)
 })
-
 ```
 
 Tornem a inspeccionar:
@@ -201,6 +203,13 @@ has_na <- function(dades) {
       no_na <- FALSE
       print(paste("La variable ", i, " té ", a, " valors nul"))
     }
+    else if (a == 0 & is.character(dades[[i]])) {
+      b <- length(dades[[i]][which(dades[[i]]=="")])
+      if (b != 0) {
+        no_na <- FALSE
+        print(paste("La variable ", i, " té ", b, " valors buits"))
+      }
+    }
   }
   if (no_na) {
     print("No hi ha cap variable amb valors nul")
@@ -210,6 +219,7 @@ has_na <- function(dades) {
 
 Un cop creada la funció l'executem per saber quines variables tenen valors nul en els diferents datasets.
 Dataset d'entrenament:
+
 ```{r}
 has_na(dataset)
 ```
@@ -218,13 +228,6 @@ has_na(dataset)
 ** S'hauria de fer aixo: https://www.kaggle.com/c/titanic/discussion/62321
 
 ```{r}
-
-
-
-
-
-
-
 
 
 
@@ -287,7 +290,9 @@ dataset %>%
   head(10)
 
 ```
+
 Categorizem el tamany de les families segons si el passatger va sol, en familia/grup gran o petit
+
 ```{r}
 
 dataset <- dataset %>%
@@ -326,7 +331,6 @@ p_priceperson
 
 ## 3.3. Exploració i transformació de variables
 
-
 ```{r}
 
 
@@ -341,8 +345,6 @@ p_priceperson
 
 
 ```
-
-
 
 ## 3.4. Gestió de valors extrems (outliers)
 
@@ -385,6 +387,7 @@ deteccio_valors_atipics(train_raw,c("Age","SibSp","Fare"))
 ```
 
 ### 3.4. Datasets final
+
 ```{r}
 # El dataset final
 dataset_final<-merge(dataset,train_predictions,by = "PassengerId", all = T)
@@ -399,6 +402,7 @@ dim(dataset_test)
 ```
 
 \newpage
+
 # 4. Anàlisis de les dades
 
 ```{r}
@@ -426,6 +430,7 @@ dim(dataset_test)
 ```
 
 # 5. Resultats finals
+
 ```{r}
 
 
@@ -449,6 +454,7 @@ dim(dataset_test)
 ```
 
 # 6. Conclusions
+
 ```{r}
 
 
