@@ -24,16 +24,17 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, include=FALSE}
 #Càrrega de llibreries
-
-library("readr")
-library("stringr")
+library(readr)
+library(stringr)
 library(kableExtra)
 library(tibble)
 library(dplyr)
 library(ggplot2)
 library(plyr)
 library(ggpubr)
-library('VIM')
+library(VIM)
+library(e1071)
+library(gmodels)
 ```
 
 \newpage
@@ -801,6 +802,59 @@ Si observem el resultat d'aquesta funció veiem que es correspon a un vector amb
 precisio_model <- sum(predicted_test == test_y_no_na)/length(predicted_test)
 print(paste("La precisió del model és de ", round(precisio_model*100,2), "%", sep=""))
 ```
+
+## 4.2. Support Vector Machine
+
+***
+
+**Construcció del model**
+
+***
+
+Per construir un model basat en SVM utilitzarem les mateixes dades transformades que en l'apartat anterior ja que al igual que els arbres de decisió, un model basat en svm utilitza també variables categòriques.
+
+A l'hora de cridar la funció encarregada de crear el model cal que tan la classe com les variables descriptives es trobin en el mateix dataframe així que fusionem la classe i les variables descriptives i comprovem que s'han fusionat correctament:
+
+```{r}
+train_x_no_na["Fate"] <- train_y_no_na
+str(train_x_no_na)
+```
+
+Seguidament ja podem crear el model, per la qual cosa és necessari especificar a priori la classe i les variables descriptives que intervenen en el procés. Per la creació del model basat en Support Vector Machine utilitzem la funció *svm* del paquet *E1071*.
+
+```{r}
+SVM_model.train <- svm(Fate ~ Pclass + Sex + Embarked + title + FamilyCat + AgeCat, data = train_x_no_na, probability = TRUE)
+```
+
+***
+
+**Avaluació del model**
+
+***
+
+Un cop creat el model procedim a avaluar-lo predint els casos de test. Per fer-ho, al igual que en l'apartat anterior fem ús de la funció *predict*, la qual rep el model creat i els registres dels casos que es volen predir.
+
+```{r}
+SVM_pred.test <- predict(SVM_model.train, test_x_no_na)
+```
+
+Una manera de visualitzar els resultats és utilitzant una matriu de confusió. La funció *CrossTable* de la llibreria *gmodels* ofereix una manera simple de presentar els resultats utilitzant una matriu de confusió però amb més detall:
+
+```{r}
+CrossTable(test_y_no_na, SVM_pred.test, prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE, dnn = c("Realitat", "Predicció"))
+```
+
+Per avaluar la precisió del model utilitzem una matriu de confusió simple com en l'apartat anterior:
+
+```{r}
+matriu_conf_svm <- table(test_y_no_na,Predicted=SVM_pred.test)
+precisio_model_matriu_conf <- sum(diag(matriu_conf_svm)) / sum(matriu_conf_svm)
+print(paste("La precisió del model és de ", round(precisio_model_matriu_conf*100,2), "%", sep=""))
+```
+
+## 4.3. Regressió logística
+
+
 
 # 5. Resultats finals
 
