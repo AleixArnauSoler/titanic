@@ -53,7 +53,11 @@ install.packages(e1071)
 
 # Bibliografia
 
-- Gibergans, J. (2019). Regressió lineal simple. Editorial UOC.
-- Gibergans, J. (2019). Regressió lineal múltiple. Editorial UOC.
+- Calvo, M., Pérez, D., Subirats, L. (2019). Introducció a la neteja i anàlisi de les dades. Editorial UOC.
+- Gil, A. J. (2019). Estadística descriptiva. Editorial UOC.
+- Bernadó, E. (2020). Test d'hipòtesis. Editorial UOC.
+- Rovira, C. (2019). Contrast d'hipòtesis. Editorial UOC.
+- Gibergans, J. (2019). Contrast de variàncies. Editorial UOC.
+- Sangüesa, R. (2019). Classificació: arbres de decisió. Editorial UOC.
 - Guillén, M., Alonso, M. T. (2019). Models de regressió logística. Editorial UOC.
-- Liviano, D., Pujol, M. (2019). Models de regressió i anàlisi multivariant amb R-Commander. Editorial UOC.
+- Sangüesa, R. (2019). Avaluació de models. Editorial UOC.

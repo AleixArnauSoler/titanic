@@ -4,15 +4,15 @@ subtitle: 'Pràctica 2: Neteja i anàlisi de les dades'
 author: "Autors: Adrià Tarradas i Aleix Arnau Soler"
 date: "Desembre 2020"
 output:
-  pdf_document:
-    highlight: zenburn
-    toc: yes
   html_document:
     highlight: default
     number_sections: yes
     theme: cosmo
     toc: yes
     toc_depth: 2
+  pdf_document:
+    highlight: zenburn
+    toc: yes
   word_document: default
 header-includes:
    - \usepackage[justification=raggedright,labelfont=bf,singlelinecheck=false]{caption}
@@ -1314,15 +1314,49 @@ Finalment generem el fitxer csv que conté la predicció:
 write.csv(df_competition, "out/prediction_comp.csv", row.names=FALSE, quote=FALSE)
 ```
 
-\newpage
-# 7. Conclusions
+# 7. Resum
 
 Com a resultats principals observats ens agradaria destacar:
 
-* 
-Com ja s'ha pogut veure all llarg d'aquest informe, hem utilitzat moltes tècniques diferents per tal d'aconseguir netejar, preprocessar i analitzar les dades del dataset escollit. Entre altres coses hem consolidat conceptes relatius al tractament de valors nuls i extrems, discretització de variables, aplicació de testos per avaluar la normalitat i homoscedasticitat d'una variable, aplicació de testos per a testejar hipotesis, generació i avaluació de models predictius, generació de gràfics d'interés, etc. 
+* Tots els valors mancants han estat inferits, principalment el de l'edat.
 
-Una de les coses que ens ha cridat més l'atenció ha estat veure com la creació d'una variable particular (title) ha aportat als models predictius creats tanta informació i ens ha recordat com el preprocessat és de les etapes més importants a l'hora d'estudiar les dades. Al llarg d'aquesta pràctica hem consolidat diversos conceptes vistos al llarg de l'assignatura i hem après noves tècniques d'anàlisi i exploració de les dades, motiu pel qual considerem que ha estat molt productiva.
+* El dataset final no conté valors absents excepte per la variable Cabina.
+
+* S'han creat algunes variables noves inexistents a partir de les dades inicials, algunes d'aquestes, com la variable *title* han estat de les més rellevants, fet que ressalta la importància del tractament de les dades.
+
+* El preu pagat per persona es correspon amb la classe en la que viatge el passatger.
+
+* Finalment no s'ha exclòs cap outlier ja que s'han considerat valors extrems però coherents dins la temàtica de la variable.
+
+* La majoria de les variables contínues analitzades segueix una distribució normal, per tant s'ha prosseguit amb testos no paramètrics, només en alguns grups concrets com en la tiquets classe 1 tenim una distribució normal.
+
+* Tan sols la variància de l'edat a través de les diferents zones és homogènia.
+
+* Hi ha diferències significatives entre el preu pagat per tiquet entre la gent que va sobreviure i la que va morir.
+
+* No hi ha diferències significatives entre l'edat de la gent que va sobreviure i la que va morir.
+
+* Hi ha diferències significatives entre les diferents classes de totes les variables categoriques analitzades entre la gent que va sobreviure i la que va morir.
+
+* L'edat és correlaciona significativament amb el preu del bitllet pagat.
+
+* Utilitzant la regressió logística obtenim una precisió del 83.84%, lleugerament superior a la resta de modelitzacions provades.
+
+* Utilitzant el model basat en arbres de decisió hem obtingut una precisió de 82.15%, la qual és un resultat bastant correcte i que demostra que realment existeix una influència de les variables descriptives utilitzades a l'hora de predir la supervivencia dels passatgers.
+
+* Segons l'arbre de decisió, la variable més significativa alhora d'explicar qui sobreviu és el sexe, seguit del titol, el tamany de la familia i la classe en que es viatjava.
+
+* El SVM ens dóna una predicció amb una precisió del 83.16%
+
+* Utilitzant la regressió logística obtenim una precisió del 83.84%.
+
+* Finalment, responent a la pregunta inicial "quin tipus de persones tenien més probabilitats de sobreviure?", respondriem que bàsicament els passatgers amb més possiblitats de sobreviure són les dones, gent amb titols nobiliaris i/o famílies nombreses.
+
+# 8. Conclusions
+
+Com ja s'ha pogut veure al llarg d'aquest informe, hem utilitzat moltes tècniques diferents per tal d'aconseguir netejar, preprocessar i analitzar les dades del dataset escollit. Entre altres coses hem consolidat conceptes relatius al tractament de valors nuls i extrems, discretització de variables, aplicació de testos per avaluar la normalitat i homoscedasticitat d'una variable, aplicació de testos per a testejar hipotesis, generació i avaluació de models predictius, generació de gràfics d'interés, etc. 
+
+Finalment ens agradaria comentar, una de les coses que ens ha cridat més l'atenció ha estat veure com la creació d'una variable particular (title) ha aportat als models predictius creats tanta informació i ens ha recordat com el preprocessat és de les etapes més importants a l'hora d'estudiar les dades. Al llarg d'aquesta pràctica hem consolidat diversos conceptes vistos al llarg de l'assignatura i hem après noves tècniques d'anàlisi i exploració de les dades, motiu pel qual considerem que ha estat molt productiva.
 
 \newpage
 
