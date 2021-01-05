@@ -329,6 +329,22 @@ p_priceperson
 
 ```
 
+### 3.2.4. Creació variable 'AgeCat'
+
+Categorizem l'edat dels passatgers en intervals de 5 anys amb l'objectiu de poder utilitzar aquesta variable a l'hora d'aplicar mètodes que utilitzen atributs categòrics en l'etapa d'anàlisi.
+
+Observem quin és el rang de valors que pren la variable *Age*:
+
+```{r}
+summary(dataset$Age)
+```
+
+```{r}
+dataset["AgeCat"] <- cut(dataset$Age, breaks = c(0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85), labels = c("0-5","5-10","10-15","15-20","20-25","25-30","30-35","35-40","40-45","45-50","50-55","55-60","60-65","65-70","70-75","75-80","80-85"))
+```
+
+
+
 ## 3.3. Exploració i transformació de variables
 
 ```{r}
@@ -405,29 +421,31 @@ dim(dataset_test)
 
 # 4. Anàlisis de les dades
 
-```{r}
+## 4.1. Arbre de decisió
 
+Una manera d'analitzar el dataset és aplicant un model de classificació basat en arbre, el qual ens permetrà veure quines variables tenen més influència a l'hora de determinar la probabilitat de supervivència de cada passatger a partir de les variables que el configuren. 
 
-
-
-```
-
+Per poder aplicar aquest mètode, és necessari entrenar el model a generar amb els registres corresponents al dataset de train i separar les variables descriptives de la classe que es vol predir. El següent tall de codi prepara les variables que s'utilitzaran a l'etapa d'entrenament i les que s'utilitzaran per avaluar la precisió del model.
 
 ```{r}
-
-
-
-
+# Preparem les variables que s'utilitzaran per entrenar el model
+train_X <- dataset_train[,c(2,4,11,12,13,16,18)]
+train_y <- dataset_train[,19]
+# Preparem les variables que s'utilitzaran per avaluar el model
+test_X <- dataset_test[,c(2,4,11,12,13,16,18)]
+test_y <- dataset_test[,19]
+# Per aplicar aquest model cal que la classe sigui de tipus factor
+train_y <- as.factor(train_y)
+test_y <- as.factor(test_y)
 ```
 
-
+Un cop preparades les variables que s'utilitzaran, creem el model utilitzant l'algoritme C5.0 de la llibreria C50 i observem un resum del model generat. 
 
 ```{r}
-
-
-
-
+model_tree <- C50::C5.0(train_X, train_y, rules=TRUE)
+summary(model_tree)
 ```
+
 
 # 5. Resultats finals
 
