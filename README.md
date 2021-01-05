@@ -1,6 +1,6 @@
 # Titanic
 
-Aquest repositori conté el codi, dades i respostes per a la realització de la pràctica 2 de l'assignatura "Tipologia i cicle de vida de les dades" del Màster en Ciència de Dades de la Universitat Oberta de Catalunya. La pràctica elaborada consisteix en la implementació de tècniques de neteja i anàlisis de dades. Podeu trobar més informació al pdf adjunt (PRAC2.pdf)
+Aquest repositori conté el codi, dades i respostes per a la realització de la pràctica 2 de l'assignatura "Tipologia i cicle de vida de les dades" del Màster en Ciència de Dades de la Universitat Oberta de Catalunya. La pràctica elaborada consisteix en la implementació de tècniques de neteja i anàlisis de dades. Podeu trobar més informació al pdf adjunt (practica_2.pdf)
 
 ##  Descripció
 
