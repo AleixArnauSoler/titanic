@@ -66,7 +66,7 @@ Els fitxers que componen el dataset són:
 Cada passatger conté informació de les següents variables:
 
 ```{r  include=FALSE}
-table<-matrix(c("PassangerID","Survived","Pclass","Name","Sex","Age","SibSp","Parch","Ticket","Fare","Cabin","Embarked","Número identificador del passatger","Enter que indica si el passatger va sobreviure l'enfonsament o no","Enter que indica el tipus de tiquet del passatger","Títol/Nom del passatger","Sexe del passatger","Edat del passatger (anys)","Número de cònjuges i germans del passatger a bord","Número de pares i fills del passatger a bord","Número del tiquet del passatger","Preu pagat/Tarifa del viatge","Número de cabina","Port en el que ha embarcat el passatger","","0 = No, 1 = Sí","1 = 1a classe, 2 = 2a classe, 3 = 3a classe","","","","","","","","C = Cherbourg, Q = Queenstown, S = Southampton"),ncol=3)
+table<-matrix(c("PassangerID","Survived","Pclass","Name","Sex","Age","SibSp","Parch","Ticket","Fare","Cabin","Embarked","Número identificador del passatger","Enter que indica si el passatger va sobreviure l'enfonsament o no","Enter que indica el tipus de tiquet del passatger","Títol/Nom del passatger","Sexe del passatger","Edat del passatger (anys)","Número de cònjuges i germans del passatger a bord","Número de pares i fills del passatger a bord","Número del tiquet del passatger","Preu pagat/Tarifa del viatge","Número de cabina","Port en el que ha embarcat el passatger","","0 = No, 1 = Sí","1 = 1a classe, 2 = 2a classe, 3 = 3a classe","","","","","","","","","C = Cherbourg, Q = Queenstown, S = Southampton"),ncol=3)
 colnames(table)<-c("Variables","Definició","Codificació")
 rownames(table)<-c("","","","","","","","","","","","")
 table_contributions<-as.table(table)
@@ -423,29 +423,115 @@ dim(dataset_test)
 
 ## 4.1. Arbre de decisió
 
+***
+
+**Construcció del model**
+
+***
+
 Una manera d'analitzar el dataset és aplicant un model de classificació basat en arbre, el qual ens permetrà veure quines variables tenen més influència a l'hora de determinar la probabilitat de supervivència de cada passatger a partir de les variables que el configuren. 
+
+Les variables que s'han utilitzat per construir el model són les següents:
+
+* Pclass
+
+* Sex
+
+* Embarked
+
+* title
+
+* FamilyCat
+
+* AgeCat
 
 Per poder aplicar aquest mètode, és necessari entrenar el model a generar amb els registres corresponents al dataset de train i separar les variables descriptives de la classe que es vol predir. El següent tall de codi prepara les variables que s'utilitzaran a l'etapa d'entrenament i les que s'utilitzaran per avaluar la precisió del model.
 
 ```{r}
+str(dataset_train)
+```
+
+
+```{r}
 # Preparem les variables que s'utilitzaran per entrenar el model
-train_X <- dataset_train[,c(2,4,11,12,13,16,18)]
+train_X <- dataset_train[,c(2,4,11,12,16,18)]
 train_y <- dataset_train[,19]
 # Preparem les variables que s'utilitzaran per avaluar el model
-test_X <- dataset_test[,c(2,4,11,12,13,16,18)]
-test_y <- dataset_test[,19]
+test_X  <- dataset_test[,c(2,4,11,12,16,18)]
+test_y  <- dataset_test[,19]
 # Per aplicar aquest model cal que la classe sigui de tipus factor
 train_y <- as.factor(train_y)
-test_y <- as.factor(test_y)
+test_y  <- as.factor(test_y)
+```
+
+ 
+Per aplicar l'algoritme de construcció del model d'arbre de decisió cal que no existeixi cap variable que tingui valors corresponents a una cadena de caràcters buida. Per solucionar-ho canviem el valor d'aquesta categòria per la paraula "desconegut":
+
+```{r}
+levels(train_X$Embarked)[1] <- "desconegut"
+levels(test_X$Embarked)[1] <- "desconegut"
+```
+
+Per poder executar el mètode cal que no existeixin valors nul, els eliminem. Per això hem creat una funció que retorna els indexs de les files que contenen algun valor nul en un dataframe.
+
+```{r}
+indices_with_na <- function(data) {
+  iwn <- c()
+  for (i in c(1:nrow(data))) {
+    if (any(is.na(data[i,]))) {
+      iwn <- c(iwn, i)
+    }
+  }
+  return(iwn)
+}
+```
+
+Un cop creada la funció detectem els indexs amb valors nul i els eliminem de les variables que s'utilitzaran per entrenar i avaluar el model:
+
+```{r}
+# Obtenim els indexs amb valors nul
+iwn_train <- indices_with_na(train_X)
+iwn_test <- indices_with_na(test_X)
+# Eliminem les files de les variables descriptives
+train_X_no_na <- train_X[-iwn_train,]
+test_X_no_na <- test_X[-iwn_test,]
+# Eliminem els valors de les variables corresponents a la classe
+train_y_no_na <- train_y[-iwn_train]
+test_y_no_na <- test_class_raw$Survived
 ```
 
 Un cop preparades les variables que s'utilitzaran, creem el model utilitzant l'algoritme C5.0 de la llibreria C50 i observem un resum del model generat. 
 
 ```{r}
-model_tree <- C50::C5.0(train_X, train_y, rules=TRUE)
+model_tree <- C50::C5.0(train_X_no_na, train_y_no_na, rules=TRUE)
 summary(model_tree)
 ```
 
+Podem observar gràficament el model generat si el construïm sense mostrar les regles i el passem a la funció plot:
+
+```{r}
+model_tree_for_plot <- C50::C5.0(train_X_no_na, train_y_no_na)
+plot(model_tree_for_plot)
+```
+
+***
+
+**Avaluació del model**
+
+***
+
+Amb el model d'arbre de decisió creat a partir de les dades del conjunt d'entrenament podem avaluar la seva eficiència intentant predir les dades que es troben al conjunt de prova. Per fer-ho utilitzem la funció *predict* de R que classifica els diferents registres del conjunt de prova (test_X) utilitzant el model que rep (model_tree).
+
+```{r}
+predicted_test <- predict(model_tree,test_X, type="class")
+```
+
+Si observem el resultat d'aquesta funció veiem que es correspon a un vector amb les etiquetes de la classe. Per comprovar la precisió de l'arbre avaluem quantes d'aquestes etiquetes predites es corresponen al valor real que té el registre comparant-lo amb el contingut de la variable *test_y_no_na*:
+
+```{r}
+precisio_model <- sum(predicted_test == test_y_no_na)/length(predicted_test)
+print(paste("La precisió del model és de ", round(precisio_model*100,2), "%", sep=""))
+```
 
 # 5. Resultats finals
 
