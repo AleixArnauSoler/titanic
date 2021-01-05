@@ -193,12 +193,13 @@ glimpse(dataset)
 
 * Les dimensions són les esperades.
 * De la variable 'Name' es poden extreure els títols d'algunes persones.
-* La variable 'Sex' es podria codificar de forma binaria.
+* La variable 'Sex' es podria codificar de forma binaria si fos necessari.
 * La variable 'Fare' sembla representar el preu total pagat alhora de comprar més d'un tiquet junts (e.g. families) envés del tiquet individual.
-* Podem crear 'dummy' variables per a les variables 'Pclass', 'Sex' i 'Embarked'
+* Podriem crear 'dummy' variables per a les variables 'Pclass', 'Sex' i 'Embarked'
 * De la variable 'cabin' es pot extreure la lletra que segurament representa diferentes zones del vaixell.
 * Dels resultats de la funció summary() i glimpse() es pot veure com tenim varis valors nuls o mencants en les variables: Age, Fare, Cabin i Embarked
 
+\newpage
 # 3. Neteja de dades
 
 ## 3.1. Gestió de valors buits o nul
@@ -650,7 +651,7 @@ Així doncs considerem que no hi ha outliers a eliminar en les nostres dades fin
 deteccio_valors_atipics(dataset,c("Age_imp","SibSp","Parch","Price_Per_Person","Family_size"))
 ```
 
-### 3.4. Datasets final
+## 3.4. Datasets final
 
 Primer de tot reduim la dimensionalitat del nostre dataset actual per a només treballar amb les variables que ens interessa analitzar. Incorporem també les dades de supervivencia en aquells passatgers pels quals coneixem si van sobreviure o no. I guardarem el fitxer com a 'dataset_titanic_clean.csv', el qual conté les dades netes que utilitzarem més endavant per als anàlisis.
 
@@ -686,7 +687,7 @@ dim(dataset_test)
 
 \newpage
 
-## 4. Exploració i anàlisis de variables
+# 4. Exploració i anàlisis de variables
 
 Primer de tot seleccionem tots els grups de cada variable que ens interessa analitzar. Llavors en comprobarem la normalitat i homogeneïtat de la variància de cadascun d'ells.
 
@@ -906,7 +907,7 @@ p_AgeClass1<-ggplot(dataset_final.Class1, aes(x=Age_imp)) +
 p_AgeClass1
 ```
 
-## 4.3. Comprovació de l'homoscedasticitat
+## 4.2. Comprovació de l'homoscedasticitat
 
 Per a comprobar l'homoscedasticitat (i.e. la homogeneitat de la variança) apliquem el test de Fligner-Killen (test no parametric) ja que com hem vist abans cap de les nostres variables continues segueix una distribució normal.
 
@@ -964,7 +965,7 @@ knitr::kable(table_res4, caption = "Test de Fligner-Killeen de homogeneitat de l
 Podem observar que tans sols la variança de l'edat a través de les diferentes zones és homogenia (acceptem la hipotesis de que les variances són homogenies ja que el p-valor > 0.5).
 La variança tant de l'edat com del preu del tiquet no és homogenia entre categories de la resta de variables.
 
-## 4.2. Distribucions de les variables entre passatgers supervivents i no supervivents
+## 4.3. Distribucions de les variables entre passatgers supervivents i no supervivents
 
 ```{r}
 # Variables continues
@@ -988,7 +989,7 @@ figure_Dis <- ggarrange(p_price,p_age,p_class,p_sex,p_zona,p_familyCat,p_priceCa
 figure_Dis
 ```
 
-## 4.3. Comparació entre dos grups de dades (variables continues)
+## 4.4. Comparació entre dos grups de dades (variables continues)
 
 Comprovem si hi ha diferencies significatives en la edat i el preu del bitllet entre la gent que va sobreviure i els que van morir.
 
@@ -1000,7 +1001,7 @@ wilcox.test(Age_imp ~ Survived, data = dataset_final[which(!(is.na(dataset_final
 Podem observar que hi ha diferencies significatives entre el preu pagat per tiquet de la gent que va sobreviure (més alt) i la que va morir (més baix)
 En canvi, no s'aprecien diferencies significatives entre la edat de la gent que va sobreviure i la que va morir.
 
-## 4.4. Comparació entre dos grups de dades (variables categoriques)
+## 4.5. Comparació entre dos grups de dades (variables categoriques)
 
 Mirem si hi ha diferencies entre les proporcions dels diferents grups de les variables categoriques entre la gent que va sobreviure i la que va morir.
 
@@ -1316,7 +1317,10 @@ write.csv(df_competition, "out/prediction_comp.csv", row.names=FALSE, quote=FALS
 \newpage
 # 7. Conclusions
 
-Com ja s'ha pogut veure en aquesta pràctica hem utilitzat moltes tècniques diferents per tal d'aconseguir netejar, preprocessar i analitzar les dades del dataset escollit. Entre altres coses hem consolidat conceptes relatius al tractament de valors nuls i extrems, discretització de variables, aplicació de testos per avaluar la normalitat i homoscedasticitat d'una variable, generació i avaluació de models predictius, generació de gràfics d'interés, etc. 
+Com a resultats principals observats ens agradaria destacar:
+
+* 
+Com ja s'ha pogut veure all llarg d'aquest informe, hem utilitzat moltes tècniques diferents per tal d'aconseguir netejar, preprocessar i analitzar les dades del dataset escollit. Entre altres coses hem consolidat conceptes relatius al tractament de valors nuls i extrems, discretització de variables, aplicació de testos per avaluar la normalitat i homoscedasticitat d'una variable, aplicació de testos per a testejar hipotesis, generació i avaluació de models predictius, generació de gràfics d'interés, etc. 
 
 Una de les coses que ens ha cridat més l'atenció ha estat veure com la creació d'una variable particular (title) ha aportat als models predictius creats tanta informació i ens ha recordat com el preprocessat és de les etapes més importants a l'hora d'estudiar les dades. Al llarg d'aquesta pràctica hem consolidat diversos conceptes vistos al llarg de l'assignatura i hem après noves tècniques d'anàlisi i exploració de les dades, motiu pel qual considerem que ha estat molt productiva.
 
