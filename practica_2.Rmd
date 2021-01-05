@@ -25,14 +25,16 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, include=FALSE}
 #Càrrega de llibreries
 
-library("readr")
-library("stringr")
+library(readr)
+library(stringr)
 library(kableExtra)
 library(tibble)
 library(dplyr)
 library(ggplot2)
 library(plyr)
 library(ggpubr)
+library(gmodels)
+library(e1071)
 ```
 
 \newpage
@@ -532,7 +534,6 @@ dataset <- dataset %>%
 ### 3.2.4. Creació variable 'Price_Person'
 
 ```{r}
-
 dataset$Price_Per_Person<-dataset$Fare/dataset$Family_size
 ```
  
@@ -557,6 +558,7 @@ p_priceperson
 ```
 
 Finalment, podem tornar a comprobar que només tenim valors mencants a la variable 'Cabin', 'Zona' que és equivalent, i 'Age', de la qual hem creat una variable nova 'Age_imp' sense valors mencants.
+
 ```{r}
 has_na(dataset)
 table(dataset$Embarked,useNA='always')
@@ -631,6 +633,7 @@ mostrar_diag_caixa(dataset,c("Age_imp","SibSp","Parch","Price_Per_Person","Famil
 ```
 
 Com hem vist enteriorment, tenim varies variables a considerar: Age_imp (omitim Age), SibSp, Parch, Family_size i Price_Per_Person (ommitim Fare).
+
 Tot i que tenim varis valors que s'allunyen considerablement de la mitjana de la distribució d'aquestes variables, considerem que els valors extrems observats són llògics i esperables ja que es moun dins d'un rang de valors que esperariem, tant pel que fa a les edats, o al número de familiars a bord o tamany de familia. L'única variable que ens faria dubtar és el preu pagat per tiquet, tot i que ens falta informació per a saber si aquests preus extrems serien possible (e.g. tiquet a 1a classe comprat a última hora en la millor cabina). Tot i així, com que treballarem amb la variable PriceCat, i tots aquests valors queden categoritzats dins de la categoria de preu 'alt', no és rellevant i per tant no eliminem cap d'aquests valors extrems.
 
 Així doncs considerem que no hi ha outliers a eliminar en les nostres dades finals.
@@ -641,7 +644,8 @@ deteccio_valors_atipics(dataset,c("Age_imp","SibSp","Parch","Price_Per_Person","
 
 ### 3.4. Datasets final
 
-Primer de tot reduim la dimensionalitat del nostre dataset actual per a només treballar amb les variables que ens interessa analitzar. Incorporem també les dades de supervivencia en aquells passatgers pels quals coneixem si van sobreviure o no. I guardarem el fitxer com a 'dataset_titanic_clean.csv', el qual conté les dades netes que utilitzarem més endavant per als analizis.
+Primer de tot reduim la dimensionalitat del nostre dataset actual per a només treballar amb les variables que ens interessa analitzar. Incorporem també les dades de supervivencia en aquells passatgers pels quals coneixem si van sobreviure o no. I guardarem el fitxer com a 'dataset_titanic_clean.csv', el qual conté les dades netes que utilitzarem més endavant per als anàlisis.
+
 ```{r}
 dataset_net<-dataset[,c("PassengerId","Pclass","Sex","Zona","FamilyCat","Price_Per_Person","PriceCat","Age_imp","title","Embarked","AgeCat")]
 
@@ -655,11 +659,13 @@ write.csv(dataset_final,"dataset_titanic_clean.csv")
 ```
 
 Podem observar com el dataset final conté 6 variables categoriques i 2 variables numériques (a banda de l'identificador del passatger i si la informació de si va sobreviure o no)
+
 ```{r}
 glimpse(dataset_final)
 ```
 
 Tornem a crear els datasets d'entrenament i test inicials utilitzant les dades actuals ja netejades i processades.
+
 ```{r}
 # El dataset final d'entrenament
 dataset_train<-dataset_final[which(!(is.na(dataset_final$Survived))),]
@@ -671,8 +677,6 @@ dim(dataset_test)
 ```
 
 \newpage
-
-
 
 ## 4. Exploració i anàlisis de variables
 
@@ -754,7 +758,6 @@ shapiro.Mo.Age_imp<-shapiro.test(dataset_final.Mor$Age_imp)
 
 ## 4.1.1. Resultats
 
-
 ```{r}
 table_res<-matrix(c(round(mean(dataset_final$Price_Per_Person),2),
          round(mean(dataset_final$Age_imp),2),
@@ -793,6 +796,7 @@ table_res<-as.table(table_res)
 knitr::kable(table_res, caption = "Resultats de les distribucions de les variables contínues'.")%>% 
   kable_styling(latex_options="scale_down")
 ```
+
 ```{r}
 # Use semi-transparent fill
 p_survived<-ggplot(dataset_final, aes(x=Price_Per_Person, fill=Survived)) +
@@ -804,27 +808,9 @@ p_priceperson
 
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 \newpage
 
-# 4. Anàlisis de les dades
+# 4. Modelització
 
 ## 4.1. Arbre de decisió
 
@@ -893,52 +879,30 @@ indices_with_na <- function(data) {
 }
 ```
 
-Comprovem utilitzant la funció has_na quants quines variables del dataset tenen valors nul:
+Comprovem utilitzant la funció has_na que no hi ha variables del dataset amb valors nul:
 
 ```{r}
 has_na(train_x)
 has_na(test_x)
 ```
-
-Veiem que només la variable AgeCat té valors nul, els suprimim utilitzant la funció *indices_with_na* i guardem el resultat en 4 variables noves:
-
-```{r}
-# Obtenim els indexs amb valors nul
-iwn_train <- indices_with_na(train_x)
-iwn_test <- indices_with_na(test_x)
-# Eliminem les files de les variables descriptives
-train_x_no_na <- train_x[-iwn_train,]
-test_x_no_na <- test_x[-iwn_test,]
-# Eliminem els valors de les variables corresponents a la classe
-train_y_no_na <- as.factor(train_y[-iwn_train])
-test_y_no_na <- as.factor(test_y[-iwn_test])
-```
-
-Comprovem que s'han suprimit correctament:
-
-```{r}
-has_na(train_x_no_na)
-has_na(train_x_no_na)
-```
-
 I que tant les variables descriptives com les corresponents a la classe tenen la mateixa mida:
 
 ```{r}
-nrow(train_x_no_na) == length(train_y_no_na)
-nrow(test_x_no_na) == length(test_y_no_na)
+nrow(train_x) == length(train_y)
+nrow(test_x) == length(test_y)
 ```
 
 Un cop preparades les variables que s'utilitzaran, creem el model utilitzant l'algoritme C5.0 de la llibreria C50 i observem un resum del model generat. 
 
 ```{r}
-model_tree <- C50::C5.0(train_x_no_na, train_y_no_na, rules=TRUE)
+model_tree <- C50::C5.0(train_x, train_y, rules=TRUE)
 summary(model_tree)
 ```
 
 Podem observar gràficament el model generat si el construïm sense mostrar les regles i el passem a la funció plot:
 
 ```{r}
-model_tree_for_plot <- C50::C5.0(train_x_no_na, train_y_no_na)
+model_tree_for_plot <- C50::C5.0(train_x, train_y)
 plot(model_tree_for_plot)
 ```
 
@@ -951,13 +915,13 @@ plot(model_tree_for_plot)
 Amb el model d'arbre de decisió creat a partir de les dades del conjunt d'entrenament podem avaluar la seva eficiència intentant predir les dades que es troben al conjunt de prova. Per fer-ho utilitzem la funció *predict* de R que classifica els diferents registres del conjunt de prova (test_X) utilitzant el model que rep (model_tree).
 
 ```{r}
-predicted_test <- predict(model_tree,test_x_no_na, type="class")
+predicted_test <- predict(model_tree,test_x, type="class")
 ```
 
 Si observem el resultat d'aquesta funció veiem que es correspon a un vector amb les etiquetes de la classe. Per comprovar la precisió de l'arbre avaluem quantes d'aquestes etiquetes predites es corresponen al valor real que té el registre comparant-lo amb el contingut de la variable *test_y_no_na*:
 
 ```{r}
-precisio_model <- sum(predicted_test == test_y_no_na)/length(predicted_test)
+precisio_model <- sum(predicted_test == test_y)/length(predicted_test)
 print(paste("La precisió del model és de ", round(precisio_model*100,2), "%", sep=""))
 ```
 
@@ -974,14 +938,14 @@ Per construir un model basat en SVM utilitzarem les mateixes dades transformades
 A l'hora de cridar la funció encarregada de crear el model cal que tan la classe com les variables descriptives es trobin en el mateix dataframe així que fusionem la classe i les variables descriptives i comprovem que s'han fusionat correctament:
 
 ```{r}
-train_x_no_na["Fate"] <- train_y_no_na
-str(train_x_no_na)
+train_x["Fate"] <- train_y
+str(train_x)
 ```
 
 Seguidament ja podem crear el model, per la qual cosa és necessari especificar a priori la classe i les variables descriptives que intervenen en el procés. Per la creació del model basat en Support Vector Machine utilitzem la funció *svm* del paquet *E1071*.
 
 ```{r}
-SVM_model.train <- svm(Fate ~ Pclass + Sex + Embarked + title + FamilyCat + AgeCat, data = train_x_no_na, probability = TRUE)
+SVM_model.train <- svm(Fate ~ Pclass + Sex + Embarked + title + FamilyCat + AgeCat, data = train_x, probability = TRUE)
 ```
 
 ***
@@ -993,25 +957,28 @@ SVM_model.train <- svm(Fate ~ Pclass + Sex + Embarked + title + FamilyCat + AgeC
 Un cop creat el model procedim a avaluar-lo predint els casos de test. Per fer-ho, al igual que en l'apartat anterior fem ús de la funció *predict*, la qual rep el model creat i els registres dels casos que es volen predir.
 
 ```{r}
-SVM_pred.test <- predict(SVM_model.train, test_x_no_na)
+SVM_pred.test <- predict(SVM_model.train, test_x)
 ```
 
 Una manera de visualitzar els resultats és utilitzant una matriu de confusió. La funció *CrossTable* de la llibreria *gmodels* ofereix una manera simple de presentar els resultats utilitzant una matriu de confusió però amb més detall:
 
 ```{r}
-CrossTable(test_y_no_na, SVM_pred.test, prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE, dnn = c("Realitat", "Predicció"))
+CrossTable(test_y, SVM_pred.test, prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE, dnn = c("Realitat", "Predicció"))
 ```
 
 Per avaluar la precisió del model utilitzem una matriu de confusió simple com en l'apartat anterior:
 
 ```{r}
-matriu_conf_svm <- table(test_y_no_na,Predicted=SVM_pred.test)
+matriu_conf_svm <- table(test_y,Predicted=SVM_pred.test)
 precisio_model_matriu_conf <- sum(diag(matriu_conf_svm)) / sum(matriu_conf_svm)
 print(paste("La precisió del model és de ", round(precisio_model_matriu_conf*100,2), "%", sep=""))
 ```
 
 ## 4.3. Regressió logística
 
+```{r}
+
+```
 
 
 # 5. Resultats finals
