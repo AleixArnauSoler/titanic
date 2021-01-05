@@ -4,15 +4,15 @@ subtitle: 'Pràctica 2: Neteja i anàlisi de les dades'
 author: "Autors: Adrià Tarradas i Aleix Arnau Soler"
 date: "Desembre 2020"
 output:
+  pdf_document:
+    highlight: zenburn
+    toc: yes
   html_document:
     highlight: default
     number_sections: yes
     theme: cosmo
     toc: yes
     toc_depth: 2
-  pdf_document:
-    highlight: zenburn
-    toc: yes
   word_document: default
 header-includes:
    - \usepackage[justification=raggedright,labelfont=bf,singlelinecheck=false]{caption}
@@ -33,6 +33,7 @@ library(dplyr)
 library(ggplot2)
 library(plyr)
 library(ggpubr)
+library('VIM')
 ```
 
 \newpage
@@ -85,7 +86,6 @@ Notes a tenir en compte:
 * Alguns nens viatjaven amb una mainadera, per tant és possible que per algun d'ells 'parch' sigui 0.
 
 \newpage
-
 
 # 2. Integració i comprobació
 
@@ -160,7 +160,7 @@ head(dataset)
 dim(dataset)
 ```
 
-A partir de la informació observada decidim canviar les classes d'algunes variables.
+A partir de la informació observada decidim canviar les classes d'algunes variables. Al canviar la classe de la variable 'Age', tots aquells passatgers menors d'1 any passaran a tenir edat = 0 (indicatiu de que tenen mesos de vida)
 
 ```{r}
 dataset <- within(dataset, {
@@ -224,15 +224,239 @@ Dataset d'entrenament:
 has_na(dataset)
 ```
 
-**La variable Cabin i Embarket també tenen valors nuls pero com que son empty strings la funcio no els reconeix.**
-** S'hauria de fer aixo: https://www.kaggle.com/c/titanic/discussion/62321
+```{r}
+# Observant les dades veiem que la variable 'Embarked' també té 2 valors buits no identificats amb la funció que hem definit.
+table(dataset$Embarked,useNA='always')
+
+# Aquests es troben en el passatger número 62 i 830
+dataset[which(dataset$Embarked==""),]
+```
+Com que només es tracta de dos valors, i aquest passatgers viatjaven sols, assumirem que aquests passatgers van embarcar al mateix port que la majoria de passatgers ('S'). De donar-se el cas de que algun d'aquests viatgers no viatges sol, també podriem assumir que que el port d'embarcament era el mateix que els seus familiars. Aquest el podriem trobar mitjançant el cognom o nom de familia del passatger.
 
 ```{r}
+dataset[62,]$Embarked<-'S'
+dataset[830,]$Embarked<-'S'
 
+table(dataset$Embarked,useNA='always')
+```
 
+En quan a la variable 'Fare', assumirem que aquest té el mateix valor mig que el que altres passatgers de viatjant en circumstancies similars van pagar.
+```{r}
+# Aquests es troba en el passatger número 1044
+dataset[which(is.na(dataset$Fare)),]
+
+dataset[1044,]$Fare<-mean(dataset[which(dataset$Pclass==3&dataset$SibSp==0&dataset$Parch==0),]$Fare,na.rm = T)
+
+dataset[1044,]$Fare
 
 ```
 
+La variable 'Cabin' conté molts valors mencants, per a tant els tractarem com a mencants i no intentarem imputar els que falten.
+
+En quan a la variable 'Age' imputarem les edats mencants segons el grup al que pertanyi cadascun dels passatgers on aquestes dades manquen. Hem decidit que fariem servir les variables 'Sex', 'Pclass' i 'Parch' igual o diferent a 0 per a crear els grups dels quals imputar les edats mancants.
+
+```{r}
+
+dataset.maleC1Parch0<-dataset[which(dataset$Sex=='male'&dataset$Pclass=='1'&dataset$Parch<1),]
+dataset.maleC1Parch1<-dataset[which(dataset$Sex=='male'&dataset$Pclass=='1'&dataset$Parch>=1),]
+dataset.maleC2Parch0<-dataset[which(dataset$Sex=='male'&dataset$Pclass=='2'&dataset$Parch<1),]
+dataset.maleC2Parch1<-dataset[which(dataset$Sex=='male'&dataset$Pclass=='2'&dataset$Parch>=1),]
+dataset.maleC3Parch0<-dataset[which(dataset$Sex=='male'&dataset$Pclass=='3'&dataset$Parch<1),]
+dataset.maleC3Parch1<-dataset[which(dataset$Sex=='male'&dataset$Pclass=='3'&dataset$Parch>=1),]
+dataset.femaleC1Parch0<-dataset[which(dataset$Sex=='female'&dataset$Pclass=='1'&dataset$Parch<1),]
+dataset.femaleC1Parch1<-dataset[which(dataset$Sex=='female'&dataset$Pclass=='1'&dataset$Parch>=1),]
+dataset.femaleC2Parch0<-dataset[which(dataset$Sex=='female'&dataset$Pclass=='2'&dataset$Parch<1),]
+dataset.femaleC2Parch1<-dataset[which(dataset$Sex=='female'&dataset$Pclass=='2'&dataset$Parch>=1),]
+dataset.femaleC3Parch0<-dataset[which(dataset$Sex=='female'&dataset$Pclass=='3'&dataset$Parch<1),]
+dataset.femaleC3Parch1<-dataset[which(dataset$Sex=='female'&dataset$Pclass=='3'&dataset$Parch>=1),]
+
+# Comprovem que les particions estan bé
+nrow(dataset.maleC1Parch0)+
+nrow(dataset.maleC1Parch1)+
+nrow(dataset.maleC2Parch0)+
+nrow(dataset.maleC2Parch1)+
+nrow(dataset.maleC3Parch0)+
+nrow(dataset.maleC3Parch1)+
+nrow(dataset.femaleC1Parch0)+
+nrow(dataset.femaleC1Parch1)+
+nrow(dataset.femaleC2Parch0)+
+nrow(dataset.femaleC2Parch1)+
+nrow(dataset.femaleC3Parch0)+
+nrow(dataset.femaleC3Parch1)
+
+```
+
+Comprovem si cadascun dels grups mostre distribucions d'edat amb mitjanes diferents.
+```{r}
+
+#maleC1Parch0
+age_mean1 <- mean(dataset.maleC1Parch0$Age, na.rm = T)
+age_median1 <- median(dataset.maleC1Parch0$Age, na.rm = T)
+
+p_maleC1Parch0<-ggplot(dataset.maleC1Parch0, aes(Age)) +
+  geom_density(fill = 'orchid', alpha =0.7) +
+  geom_vline(aes(xintercept = age_mean1, color = 'mean'), linetype = 5) +
+  geom_vline(aes(xintercept = age_median1, color = 'median'), linetype = 5) +
+  scale_color_manual(name = "stats", values = c(mean = 'indianred', median = 'steelblue')) +
+  ggtitle(label ="maleC1Parch0")
+
+#maleC1Parch1
+age_mean2 <- mean(dataset.maleC1Parch1$Age, na.rm = T)
+age_median2 <- median(dataset.maleC1Parch1$Age, na.rm = T)
+
+p_maleC1Parch1<-ggplot(dataset.maleC1Parch1, aes(Age)) +
+  geom_density(fill = 'orchid', alpha =0.7) +
+  geom_vline(aes(xintercept = age_mean2, color = 'mean'), linetype = 5) +
+  geom_vline(aes(xintercept = age_median2, color = 'median'), linetype = 5) +
+  scale_color_manual(name = "stats", values = c(mean = 'indianred', median = 'steelblue')) +
+  ggtitle(label ="maleC1Parch1")
+
+#maleC2Parch0
+age_mean3 <- mean(dataset.maleC2Parch0$Age, na.rm = T)
+age_median3 <- median(dataset.maleC2Parch0$Age, na.rm = T)
+
+p_maleC2Parch0<-ggplot(dataset.maleC2Parch0, aes(Age)) +
+  geom_density(fill = 'orchid', alpha =0.7) +
+  geom_vline(aes(xintercept = age_mean3, color = 'mean'), linetype = 5) +
+  geom_vline(aes(xintercept = age_median3, color = 'median'), linetype = 5) +
+  scale_color_manual(name = "stats", values = c(mean = 'indianred', median = 'steelblue')) +
+  ggtitle(label ="maleC2Parch0")
+
+#maleC2Parch1
+age_mean4 <- mean(dataset.maleC2Parch1$Age, na.rm = T)
+age_median4 <- median(dataset.maleC2Parch1$Age, na.rm = T)
+
+p_maleC2Parch1<-ggplot(dataset.maleC2Parch1, aes(Age)) +
+  geom_density(fill = 'orchid', alpha =0.7) +
+  geom_vline(aes(xintercept = age_mean4, color = 'mean'), linetype = 5) +
+  geom_vline(aes(xintercept = age_median4, color = 'median'), linetype = 5) +
+  scale_color_manual(name = "stats", values = c(mean = 'indianred', median = 'steelblue')) +
+  ggtitle(label ="maleC2Parch1")
+
+#maleC3Parch0
+age_mean5 <- mean(dataset.maleC3Parch0$Age, na.rm = T)
+age_median5 <- median(dataset.maleC3Parch0$Age, na.rm = T)
+
+p_maleC3Parch0<-ggplot(dataset.maleC3Parch0, aes(Age)) +
+  geom_density(fill = 'orchid', alpha =0.7) +
+  geom_vline(aes(xintercept = age_mean5, color = 'mean'), linetype = 5) +
+  geom_vline(aes(xintercept = age_median5, color = 'median'), linetype = 5) +
+  scale_color_manual(name = "stats", values = c(mean = 'indianred', median = 'steelblue')) +
+  ggtitle(label ="maleC3Parch0")
+
+#maleC3Parch1
+age_mean6 <- mean(dataset.maleC3Parch1$Age, na.rm = T)
+age_median6 <- median(dataset.maleC3Parch1$Age, na.rm = T)
+
+p_maleC3Parch1<-ggplot(dataset.maleC3Parch1, aes(Age)) +
+  geom_density(fill = 'orchid', alpha =0.7) +
+  geom_vline(aes(xintercept = age_mean6, color = 'mean'), linetype = 5) +
+  geom_vline(aes(xintercept = age_median6, color = 'median'), linetype = 5) +
+  scale_color_manual(name = "stats", values = c(mean = 'indianred', median = 'steelblue')) +
+  ggtitle(label ="maleC3Parch1")
+
+#femaleC1Parch0
+age_mean7 <- mean(dataset.femaleC1Parch0$Age, na.rm = T)
+age_median7 <- median(dataset.femaleC1Parch0$Age, na.rm = T)
+
+p_femaleC1Parch0<-ggplot(dataset.femaleC1Parch0, aes(Age)) +
+  geom_density(fill = 'orchid', alpha =0.7) +
+  geom_vline(aes(xintercept = age_mean7, color = 'mean'), linetype = 5) +
+  geom_vline(aes(xintercept = age_median7, color = 'median'), linetype = 5) +
+  scale_color_manual(name = "stats", values = c(mean = 'indianred', median = 'steelblue')) +
+  ggtitle(label ="femaleC1Parch0")
+
+#femaleC1Parch1
+age_mean8 <- mean(dataset.femaleC1Parch1$Age, na.rm = T)
+age_median8 <- median(dataset.femaleC1Parch1$Age, na.rm = T)
+
+p_femaleC1Parch1<-ggplot(dataset.femaleC1Parch1, aes(Age)) +
+  geom_density(fill = 'orchid', alpha =0.7) +
+  geom_vline(aes(xintercept = age_mean8, color = 'mean'), linetype = 5) +
+  geom_vline(aes(xintercept = age_median8, color = 'median'), linetype = 5) +
+  scale_color_manual(name = "stats", values = c(mean = 'indianred', median = 'steelblue')) +
+  ggtitle(label ="femaleC1Parch1")
+
+#femaleC2Parch0
+age_mean9 <- mean(dataset.femaleC2Parch0$Age, na.rm = T)
+age_median9 <- median(dataset.femaleC2Parch0$Age, na.rm = T)
+
+p_femaleC2Parch0<-ggplot(dataset.femaleC2Parch0, aes(Age)) +
+  geom_density(fill = 'orchid', alpha =0.7) +
+  geom_vline(aes(xintercept = age_mean9, color = 'mean'), linetype = 5) +
+  geom_vline(aes(xintercept = age_median9, color = 'median'), linetype = 5) +
+  scale_color_manual(name = "stats", values = c(mean = 'indianred', median = 'steelblue')) +
+  ggtitle(label ="femaleC2Parch0")
+
+#femaleC2Parch1
+age_mean10 <- mean(dataset.femaleC2Parch1$Age, na.rm = T)
+age_median10 <- median(dataset.femaleC2Parch1$Age, na.rm = T)
+
+p_femaleC2Parch1<-ggplot(dataset.femaleC2Parch1, aes(Age)) +
+  geom_density(fill = 'orchid', alpha =0.7) +
+  geom_vline(aes(xintercept = age_mean10, color = 'mean'), linetype = 5) +
+  geom_vline(aes(xintercept = age_median10, color = 'median'), linetype = 5) +
+  scale_color_manual(name = "stats", values = c(mean = 'indianred', median = 'steelblue')) +
+  ggtitle(label ="femaleC2Parch1")
+
+#femaleC3Parch0
+age_mean11 <- mean(dataset.femaleC3Parch0$Age, na.rm = T)
+age_median11 <- median(dataset.femaleC3Parch0$Age, na.rm = T)
+
+p_femaleC3Parch0<-ggplot(dataset.femaleC3Parch0, aes(Age)) +
+  geom_density(fill = 'orchid', alpha =0.7) +
+  geom_vline(aes(xintercept = age_mean11, color = 'mean'), linetype = 5) +
+  geom_vline(aes(xintercept = age_median11, color = 'median'), linetype = 5) +
+  scale_color_manual(name = "stats", values = c(mean = 'indianred', median = 'steelblue')) +
+  ggtitle(label ="femaleC3Parch0")
+
+#femaleC3Parch1
+age_mean12 <- mean(dataset.femaleC3Parch1$Age, na.rm = T)
+age_median12 <- median(dataset.femaleC3Parch1$Age, na.rm = T)
+
+p_femaleC3Parch1<-ggplot(dataset.femaleC3Parch1, aes(Age)) +
+  geom_density(fill = 'orchid', alpha =0.7) +
+  geom_vline(aes(xintercept = age_mean12, color = 'mean'), linetype = 5) +
+  geom_vline(aes(xintercept = age_median12, color = 'median'), linetype = 5) +
+  scale_color_manual(name = "stats", values = c(mean = 'indianred', median = 'steelblue')) +
+  ggtitle(label ="femaleC3Parch1")
+
+
+figure_Ages <- ggarrange(p_maleC1Parch0,p_maleC1Parch1,p_maleC2Parch0,p_maleC2Parch1,p_maleC3Parch0,p_maleC3Parch1,p_femaleC1Parch0,p_femaleC1Parch1,p_femaleC2Parch0,p_femaleC2Parch1,p_femaleC3Parch0,p_femaleC3Parch1, ncol = 3, nrow = 4)
+
+figure_Ages
+```
+
+
+```{r}
+
+impute_age <- function (x) {
+    x[is.na(x)] <- median(x, na.rm = T)
+    return(x)
+}
+
+impute_age(dataset.maleC1Parch0$Age)
+
+dataset.maleC1Parch0$Age<-impute_age(dataset.maleC1Parch0$Age)
+dataset.maleC1Parch1$Age<-impute_age(dataset.maleC1Parch1$Age)
+dataset.maleC2Parch0$Age<-impute_age(dataset.maleC2Parch0$Age)
+dataset.maleC2Parch1$Age<-impute_age(dataset.maleC2Parch1$Age)
+dataset.maleC3Parch0$Age<-impute_age(dataset.maleC3Parch0$Age)
+dataset.maleC3Parch1$Age<-impute_age(dataset.maleC3Parch1$Age)
+dataset.femaleC1Parch0$Age<-impute_age(dataset.femaleC1Parch0$Age)
+dataset.femaleC1Parch1$Age<-impute_age(dataset.femaleC1Parch1$Age)
+dataset.femaleC2Parch0$Age<-impute_age(dataset.femaleC2Parch0$Age)
+dataset.femaleC2Parch1$Age<-impute_age(dataset.femaleC2Parch1$Age)
+dataset.femaleC3Parch0$Age<-impute_age(dataset.femaleC3Parch0$Age)
+dataset.femaleC3Parch1$Age<-impute_age(dataset.femaleC3Parch1$Age)
+
+dataset_imputed<-rbind(dataset.maleC1Parch0,dataset.maleC1Parch1,dataset.maleC2Parch0,dataset.maleC2Parch1,dataset.maleC3Parch0,dataset.maleC3Parch1,dataset.femaleC1Parch0,dataset.femaleC1Parch1,dataset.femaleC2Parch0,dataset.femaleC2Parch1,dataset.femaleC3Parch0,dataset.femaleC3Parch1)
+
+dataset_imputed<-dataset_imputed[,c('PassengerId','Age')]
+names(dataset_imputed[2])<-'Age_imp'
+
+dataset<-merge(dataset,dataset_imputed,by = 'PassengerId')
+```
 
 ## 3.2. Creació de variables
 
@@ -311,8 +535,8 @@ dataset$Price_Per_Person<-dataset$Fare/dataset$Family_size
 
 
 ```
-
-
+ 
+Podem visualitzar com ara el preu pagat per ticket per a cada passatger, es mou dins d'un rang logic segons la classe en la que viatjaven: 1a classe = >20 dolars, 2a class = 10-20 dollars, 3a classe = < 10 dolars.
 ```{r}
 # Use semi-transparent fill
 p_fare<-ggplot(dataset[which(dataset$Fare<100),], aes(x=Fare, fill=Pclass)) +
@@ -329,7 +553,13 @@ p_priceperson
 
 ```
 
-### 3.2.4. Creació variable 'AgeCat'
+Finalment, podem tornar a comprobar que només tenim valors mencants a la variable 'Cabin'
+```{r}
+has_na(dataset)
+table(dataset$Embarked,useNA='always')
+```
+
+### 3.2.5. Creació variable 'AgeCat'
 
 Categorizem l'edat dels passatgers en intervals de 5 anys amb l'objectiu de poder utilitzar aquesta variable a l'hora d'aplicar mètodes que utilitzen atributs categòrics en l'etapa d'anàlisi.
 
@@ -342,7 +572,6 @@ summary(dataset$Age)
 ```{r}
 dataset["AgeCat"] <- cut(dataset$Age, breaks = c(0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85), labels = c("0-5","5-10","10-15","15-20","20-25","25-30","30-35","35-40","40-45","45-50","50-55","55-60","60-65","65-70","70-75","75-80","80-85"))
 ```
-
 
 
 ## 3.3. Exploració i transformació de variables
@@ -361,6 +590,10 @@ dataset["AgeCat"] <- cut(dataset$Age, breaks = c(0,5,10,15,20,25,30,35,40,45,50,
 
 
 ```
+
+
+
+
 
 ## 3.4. Gestió de valors extrems (outliers)
 
@@ -536,34 +769,18 @@ print(paste("La precisió del model és de ", round(precisio_model*100,2), "%", 
 # 5. Resultats finals
 
 ```{r}
-
-
-
-
 ```
 
 
 ```{r}
-
-
-
-
 ```
 
 ```{r}
-
-
-
-
 ```
 
 # 6. Conclusions
 
 ```{r}
-
-
-
-
 ```
 
 
@@ -622,8 +839,4 @@ ggplot(missing_fare_subset, aes(x = Fare)) +
 Mètodes de predicció
 Arbres de decisió
 Mètodes d'agregació
-
-
-
-
 
